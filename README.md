@@ -46,19 +46,19 @@ Unlike an ordinary chatbot, each philosopher speaks only with the knowledge of t
 <div align="center">
 
 ### 🏠 Home Page
-<img src="images/home.png" alt="Agora AI Home Page" width="800"/>
+<img src="images/home.png" alt="Agora AI Home Page" width="1000"/>
 
 ### 🧠 Philosophers List
-<img src="images/philosophers.png" alt="Philosophers Selection Page" width="800"/>
+<img src="images/philosophers.png" alt="Philosophers Selection Page" width="1000"/>
 
 ### 💬 One-on-One Conversation
-<img src="images/conversations.png" alt="Chat Interface with Philosopher" width="800"/>
+<img src="images/conversations.png" alt="Chat Interface with Philosopher" width="1000"/>
 
 ### 🎪 Create New Symposium
-<img src="images/new_symposium.png" alt="Symposium Creation Interface" width="800"/>
+<img src="images/new_symposium.png" alt="Symposium Creation Interface" width="1000"/>
 
 ### 🎭 Active Symposium Debate
-<img src="images/symposium.png" alt="Multi-Philosopher Symposium Debate" width="800"/>
+<img src="images/symposium.png" alt="Multi-Philosopher Symposium Debate" width="1000"/>
 
 </div>
 
