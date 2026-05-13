@@ -650,7 +650,7 @@ data: [DONE]
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/username/agora-ai.git
+git clone https://github.com/HasanCan6241/AgoraAI.git
 cd agora-ai
 
 # 2. Set environment variables
