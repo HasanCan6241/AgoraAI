@@ -41,6 +41,27 @@ Agora AI is an artificial intelligence platform where users can engage in realis
 
 Unlike an ordinary chatbot, each philosopher speaks only with the knowledge of their own era, using their own philosophical method, based on their actual works. Socrates never stops questioning, Nietzsche speaks in aphorisms, Kant provides systematic analysis.
 
+## 📸 Screenshots
+
+<div align="center">
+
+### 🏠 Home Page
+<img src="images/home.png" alt="Agora AI Home Page" width="800"/>
+
+### 🧠 Philosophers List
+<img src="images/philosophers.png" alt="Philosophers Selection Page" width="800"/>
+
+### 💬 One-on-One Conversation
+<img src="images/conversations.png" alt="Chat Interface with Philosopher" width="800"/>
+
+### 🎪 Create New Symposium
+<img src="images/new_symposium.png" alt="Symposium Creation Interface" width="800"/>
+
+### 🎭 Active Symposium Debate
+<img src="images/symposium.png" alt="Multi-Philosopher Symposium Debate" width="800"/>
+
+</div>
+
 ## ✨ Features
 
 ### User Management
