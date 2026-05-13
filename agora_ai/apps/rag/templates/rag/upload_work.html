@@ -1,0 +1,259 @@
+{# PATH: apps/rag/templates/rag/upload_work.html #}
+{# Agora AI — Felsefi Eser Yükleme (Staff) #}
+{# Doküman Bölüm 6/AŞAMA 4: RAG ingestion upload arayüzü #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Eser Yükle — {{ philosopher.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-zone {
+        border: 2px dashed var(--agora-border);
+        border-radius: 12px;
+        padding: 2.5rem;
+        text-align: center;
+        transition: border-color 0.2s ease, background 0.2s ease;
+        cursor: pointer;
+        background: var(--agora-dark-3);
+    }
+    .upload-zone:hover,
+    .upload-zone.dragover {
+        border-color: var(--agora-gold);
+        background: rgba(201,168,76,0.05);
+    }
+    .upload-zone i { font-size: 2.5rem; color: var(--agora-border); margin-bottom: 0.75rem; }
+    .status-row {
+        display: flex; align-items: center; gap: 0.75rem;
+        padding: 0.65rem 1rem;
+        border-radius: 8px;
+        background: var(--agora-dark-3);
+        border: 1px solid var(--agora-border-light);
+        margin-bottom: 0.5rem;
+    }
+    .dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .dot-completed  { background:#6dd68a; }
+    .dot-pending    { background:#ffc107; }
+    .dot-processing { background:#0dcaf0; animation: pulse 1.2s infinite; }
+    .dot-failed     { background:#dc3545; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            {# Breadcrumb #}
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb" style="font-size:0.82rem;">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'philosophers:list' %}" class="text-gold">Filozoflar</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'philosophers:detail' philosopher.slug %}" class="text-gold">
+                            {{ philosopher.name }}
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active text-agora-muted">Eser Yükle</li>
+                </ol>
+            </nav>
+
+            <h2 class="font-serif mb-1" style="color:var(--agora-parchment);">
+                <i class="fas fa-file-arrow-up me-2 text-gold"></i>
+                {{ philosopher.name }} — Eser Yükle
+            </h2>
+            <p class="text-agora-muted mb-4" style="font-size:0.9rem;">
+                Yalnızca <strong>.pdf</strong> ve <strong>.txt</strong> dosyaları · Maksimum <strong>50 MB</strong>
+            </p>
+
+            {# Yükleme Formu #}
+            <div class="agora-card p-4 mb-4">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-book me-1 text-gold"></i>Eser Başlığı
+                        </label>
+                        <input type="text" id="titleInput" name="title"
+                               class="form-control" placeholder="ör: Saf Aklın Eleştirisi" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-file me-1 text-gold"></i>Dosya
+                        </label>
+                        <div class="upload-zone" id="uploadZone">
+                            <i class="fas fa-cloud-arrow-up d-block mb-2"></i>
+                            <p class="mb-1" style="color:var(--agora-muted-light);">
+                                Dosyayı buraya sürükleyin ya da tıklayın
+                            </p>
+                            <p class="text-agora-muted" style="font-size:0.8rem;">
+                                PDF veya TXT · max 50 MB
+                            </p>
+                            <input type="file" id="fileInput" name="file"
+                                   accept=".pdf,.txt" class="d-none" required>
+                        </div>
+                        <div id="fileInfo" class="mt-2 text-agora-muted" style="font-size:0.82rem; display:none;">
+                            <i class="fas fa-file-check me-1 text-gold"></i>
+                            <span id="fileName"></span>
+                        </div>
+                        <div id="fileError" class="text-danger mt-1" style="font-size:0.82rem; display:none;"></div>
+                    </div>
+
+                    <button type="submit" id="uploadBtn" class="btn btn-agora-gold px-4">
+                        <i class="fas fa-upload me-2"></i>Yükle ve İşle
+                    </button>
+                </form>
+
+                {# Yükleme sonucu #}
+                <div id="uploadResult" class="mt-4" style="display:none;"></div>
+            </div>
+
+            {# Mevcut Eserler #}
+            <h5 class="font-serif mb-3" style="color:var(--agora-parchment);">
+                Mevcut Eserler
+                <span class="text-agora-muted" style="font-size:0.85rem; font-family:var(--font-body);">
+                    ({{ existing_works.count }})
+                </span>
+            </h5>
+            {% for work in existing_works %}
+            <div class="status-row" id="work-{{ work.pk }}">
+                <div class="dot dot-{{ work.ingestion_status }}"></div>
+                <div class="flex-grow-1">
+                    <div style="font-size:0.9rem; color:var(--agora-parchment);">{{ work.title }}</div>
+                    <div style="font-size:0.75rem; color:var(--agora-muted);">
+                        {{ work.get_ingestion_status_display }}
+                        {% if work.chunk_count %} · {{ work.chunk_count }} chunk{% endif %}
+                        {% if work.ingestion_error %}
+                        <span class="text-danger"> · {{ work.ingestion_error|truncatechars:60 }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if work.ingestion_status == "processing" or work.ingestion_status == "pending" %}
+                <small class="text-agora-muted" style="font-size:0.72rem;" data-poll="{{ work.pk }}">
+                    İşleniyor...
+                </small>
+                {% endif %}
+            </div>
+            {% empty %}
+            <p class="text-agora-muted fst-italic small">Henüz eser yüklenmemiş.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const form      = document.getElementById('uploadForm');
+    const zone      = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo  = document.getElementById('fileInfo');
+    const fileError = document.getElementById('fileError');
+    const fileName  = document.getElementById('fileName');
+    const resultBox = document.getElementById('uploadResult');
+    const uploadBtn = document.getElementById('uploadBtn');
+
+    // Drag & drop
+    zone.addEventListener('click', () => fileInput.click());
+    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            showFileInfo(e.dataTransfer.files[0]);
+        }
+    });
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) showFileInfo(fileInput.files[0]);
+    });
+
+    function showFileInfo(file) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!['pdf', 'txt'].includes(ext)) {
+            fileError.textContent = 'Yalnızca .pdf ve .txt dosyaları kabul edilir.';
+            fileError.style.display = 'block';
+            fileInfo.style.display  = 'none';
+            return;
+        }
+        if (file.size > 52_428_800) {
+            fileError.textContent = 'Dosya 50 MB sınırını aşıyor.';
+            fileError.style.display = 'block';
+            fileInfo.style.display  = 'none';
+            return;
+        }
+        fileError.style.display = 'none';
+        fileName.textContent    = `${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`;
+        fileInfo.style.display  = 'block';
+    }
+
+    // Form submit → AJAX
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Yükleniyor...';
+
+        const fd = new FormData(form);
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        try {
+            const resp = await fetch(window.location.href, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                body: fd,
+            });
+            const data = await resp.json();
+
+            if (resp.ok && data.success) {
+                resultBox.innerHTML = `
+                    <div class="alert alert-success agora-alert">
+                        <i class="fas fa-circle-check me-1"></i>
+                        <strong>${data.title}</strong> yüklendi ve işleme kuyruğuna alındı.
+                        <br><small class="text-muted">work_id=${data.work_id} — Durum: ${data.status}</small>
+                    </div>`;
+                resultBox.style.display = 'block';
+                // Sayfayı 2 sn sonra yenile (yeni eseri listede göster)
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                const errs = data.errors ? Object.values(data.errors).join(' ') : data.error;
+                resultBox.innerHTML = `<div class="alert alert-danger agora-alert"><i class="fas fa-circle-xmark me-1"></i>${errs}</div>`;
+                resultBox.style.display = 'block';
+            }
+        } catch (err) {
+            resultBox.innerHTML = `<div class="alert alert-danger agora-alert">Ağ hatası: ${err.message}</div>`;
+            resultBox.style.display = 'block';
+        } finally {
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-upload me-2"></i>Yükle ve İşle';
+        }
+    });
+
+    // Polling: 'processing'/'pending' durumundaki eserleri takip et
+    const pollTargets = document.querySelectorAll('[data-poll]');
+    if (pollTargets.length) {
+        const interval = setInterval(async () => {
+            let allDone = true;
+            for (const el of pollTargets) {
+                const workId = el.dataset.poll;
+                try {
+                    const r = await fetch(`/rag/status/${workId}/`);
+                    const d = await r.json();
+                    if (d.status === 'processing' || d.status === 'pending') {
+                        allDone = false;
+                    } else {
+                        // Sayfayı yenile
+                        location.reload();
+                    }
+                } catch (_) {}
+            }
+            if (allDone) clearInterval(interval);
+        }, 5000); // 5 saniyede bir yokla
+    }
+})();
+</script>
+{% endblock %}

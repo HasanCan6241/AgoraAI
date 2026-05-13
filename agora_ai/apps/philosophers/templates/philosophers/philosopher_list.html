@@ -1,0 +1,314 @@
+{# PATH: apps/philosophers/templates/philosophers/philosopher_list.html #}
+{# Agora AI — Filozof Listesi (Agora Ana Sayfası) #}
+{# Doküman Bölüm 6/AŞAMA 3: philosopher_list.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Filozoflar{% endblock %}
+
+{% block extra_css %}
+<style>
+    .philosophers-hero {
+        background: linear-gradient(180deg, var(--agora-dark-2) 0%, var(--agora-dark-1) 100%);
+        padding: 3.5rem 0 2.5rem;
+        border-bottom: 1px solid var(--agora-border-light);
+    }
+    .philosophers-hero h1 {
+        font-family: var(--font-serif);
+        font-size: clamp(1.8rem, 4vw, 2.8rem);
+        color: var(--agora-parchment);
+    }
+    /* Filozof Kart */
+    .philosopher-card {
+        background: var(--agora-card-bg);
+        border: 1px solid var(--agora-border);
+        border-radius: 14px;
+        overflow: hidden;
+        transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .philosopher-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(201,168,76,0.45);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+    }
+    .philosopher-card-header {
+        background: linear-gradient(135deg, var(--agora-dark-3), var(--agora-dark-4));
+        padding: 1.8rem 1.5rem 1.2rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        border-bottom: 1px solid var(--agora-border-light);
+    }
+    .philosopher-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--agora-gold-dark);
+        flex-shrink: 0;
+    }
+    .philosopher-avatar-placeholder {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--agora-gold-dark), var(--agora-dark-4));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-serif);
+        font-size: 1.6rem;
+        color: var(--agora-gold-light);
+        border: 2px solid var(--agora-gold-dark);
+        flex-shrink: 0;
+    }
+    .philosopher-name {
+        font-family: var(--font-serif);
+        font-size: 1.2rem;
+        color: var(--agora-parchment);
+        margin-bottom: 0.2rem;
+    }
+    .philosopher-era {
+        font-size: 0.78rem;
+        color: var(--agora-gold);
+        letter-spacing: 0.05em;
+    }
+    .philosopher-school {
+        font-size: 0.78rem;
+        color: var(--agora-muted);
+        font-style: italic;
+    }
+    .philosopher-card-body {
+        padding: 1.2rem 1.5rem;
+        flex: 1;
+    }
+    .philosopher-bio {
+        font-size: 0.88rem;
+        color: var(--agora-muted-light);
+        line-height: 1.65;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .concept-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin-top: 1rem;
+    }
+    .concept-chip {
+        font-size: 0.72rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 50px;
+        background: rgba(201,168,76,0.09);
+        border: 1px solid rgba(201,168,76,0.22);
+        color: var(--agora-gold);
+        white-space: nowrap;
+    }
+    .philosopher-card-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--agora-border-light);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+    .work-badge {
+        font-size: 0.75rem;
+        color: var(--agora-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+    .work-badge.ready {
+        color: #6dd68a;
+    }
+    .btn-start-chat {
+        background: linear-gradient(135deg, var(--agora-gold-dark), var(--agora-gold));
+        border: none;
+        color: var(--agora-dark-1);
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 0.45rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+    .btn-start-chat:hover {
+        background: linear-gradient(135deg, var(--agora-gold), var(--agora-gold-light));
+        color: var(--agora-dark-1);
+        box-shadow: 0 3px 14px rgba(201,168,76,0.35);
+    }
+    /* Filtre bar */
+    .filter-bar {
+        background: var(--agora-dark-2);
+        border-bottom: 1px solid var(--agora-border-light);
+        padding: 0.75rem 0;
+    }
+    .filter-bar .form-select {
+        font-size: 0.85rem;
+        max-width: 220px;
+    }
+    /* Boş durum */
+    .empty-state {
+        text-align: center;
+        padding: 5rem 1rem;
+        color: var(--agora-muted);
+    }
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: var(--agora-border);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Hero Başlık ──────────────────────────────────────────────────────── #}
+<section class="philosophers-hero">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col">
+                <p class="text-uppercase fw-semibold mb-2"
+                   style="color: var(--agora-gold); font-size: 0.8rem; letter-spacing: 0.15em;">
+                    <i class="fas fa-landmark me-1"></i>Agora
+                </p>
+                <h1 class="mb-1">Filozoflarla Diyaloğa Başla</h1>
+                <p class="text-agora-muted mb-0" style="font-family: var(--font-body);">
+                    {{ philosopher_count }} düşünür seni bekliyor.
+                    Bir filozofa tıkla, sohbet başlat.
+                </p>
+            </div>
+            <div class="col-auto d-none d-md-block">
+                <a href="{% url 'symposium:create' %}" class="btn btn-agora-ghost">
+                    <i class="fas fa-theater-masks me-1"></i>
+                    Sempozyum Başlat
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ── Filtre Çubuğu ────────────────────────────────────────────────────── #}
+<div class="filter-bar">
+    <div class="container">
+        <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+            <label class="text-agora-muted small mb-0">
+                <i class="fas fa-filter me-1"></i>Filtrele:
+            </label>
+            <select name="era" class="form-select form-select-sm"
+                    onchange="this.form.submit()">
+                <option value="">Tüm Dönemler</option>
+                {% for era in all_eras %}
+                <option value="{{ era }}"
+                        {% if era == era_filter %}selected{% endif %}>
+                    {{ era }}
+                </option>
+                {% endfor %}
+            </select>
+            {% if era_filter %}
+            <a href="{% url 'philosophers:list' %}" class="btn btn-agora-ghost btn-sm">
+                <i class="fas fa-xmark me-1"></i>Filtreyi Kaldır
+            </a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+{# ── Filozof Kartları Grid ─────────────────────────────────────────────── #}
+<section class="py-5">
+    <div class="container">
+        {% if philosophers %}
+        <div class="row g-4">
+            {% for philosopher in philosophers %}
+            <div class="col-md-6 col-lg-4 fade-in-up"
+                 style="animation-delay: {{ forloop.counter0 }}00ms;">
+                <div class="philosopher-card">
+
+                    {# Kart Başlık: Avatar + İsim + Dönem #}
+                    <div class="philosopher-card-header">
+                        {% if philosopher.avatar_url %}
+                        <img src="{{ philosopher.avatar_url }}"
+                             alt="{{ philosopher.name }}"
+                             class="philosopher-avatar">
+                        {% else %}
+                        <div class="philosopher-avatar-placeholder">
+                            {{ philosopher.name|first }}
+                        </div>
+                        {% endif %}
+
+                        <div>
+                            <h3 class="philosopher-name mb-1">{{ philosopher.name }}</h3>
+                            <div class="philosopher-era mb-1">
+                                <i class="fas fa-hourglass-half fa-xs me-1"></i>
+                                {{ philosopher.era }}
+                            </div>
+                            {% if philosopher.school %}
+                            <div class="philosopher-school">{{ philosopher.school }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {# Kart Gövde: Kısa bio + kavramlar #}
+                    <div class="philosopher-card-body">
+                        <p class="philosopher-bio">{{ philosopher.short_bio }}</p>
+
+                        {% with concepts=philosopher.get_core_concepts_list %}
+                        {% if concepts %}
+                        <div class="concept-chips">
+                            {% for concept in concepts|slice:":4" %}
+                            <span class="concept-chip">{{ concept }}</span>
+                            {% endfor %}
+                            {% if concepts|length > 4 %}
+                            <span class="concept-chip" style="opacity:0.6;">
+                                +{{ concepts|length|add:"-4" }} daha
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+
+                    {# Kart Alt: Eser sayısı + Sohbet butonu #}
+                    <div class="philosopher-card-footer">
+                        <div class="work-badge {% if philosopher.work_count > 0 %}ready{% endif %}">
+                            {% if philosopher.work_count > 0 %}
+                            <i class="fas fa-circle-check fa-xs"></i>
+                            {{ philosopher.work_count }} eser RAG'da
+                            {% else %}
+                            <i class="fas fa-circle fa-xs"></i>
+                            Eser yüklenmedi
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'philosophers:detail' philosopher.slug %}"
+                           class="btn-start-chat">
+                            Profil & Sohbet
+                            <i class="fas fa-arrow-right ms-1 fa-xs"></i>
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        {# Boş durum #}
+        <div class="empty-state">
+            <i class="fas fa-magnifying-glass d-block"></i>
+            <h4 class="font-serif mt-3">Filozof bulunamadı</h4>
+            <p class="small">Filtreyi kaldırmayı deneyin.</p>
+            <a href="{% url 'philosophers:list' %}" class="btn btn-agora-ghost mt-2">
+                <i class="fas fa-xmark me-1"></i>Filtreyi Temizle
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}

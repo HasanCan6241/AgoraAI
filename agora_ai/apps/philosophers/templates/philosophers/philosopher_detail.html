@@ -1,0 +1,360 @@
+{# PATH: apps/philosophers/templates/philosophers/philosopher_detail.html #}
+{# Agora AI — Filozof Profil Detay Sayfası #}
+{# Doküman Bölüm 6/AŞAMA 3: philosopher_detail.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ philosopher.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-hero {
+        background: linear-gradient(160deg, var(--agora-dark-3) 0%, var(--agora-dark-1) 60%);
+        border-bottom: 1px solid var(--agora-border-light);
+        padding: 3.5rem 0;
+        position: relative;
+        overflow: hidden;
+    }
+    .detail-hero::after {
+        content: attr(data-initial);
+        position: absolute;
+        right: -1rem;
+        top: -2rem;
+        font-family: var(--font-serif);
+        font-size: 14rem;
+        color: rgba(201,168,76,0.04);
+        line-height: 1;
+        pointer-events: none;
+        user-select: none;
+    }
+    .detail-avatar {
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--agora-gold-dark);
+        box-shadow: 0 0 0 6px rgba(201,168,76,0.1);
+    }
+    .detail-avatar-placeholder {
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--agora-gold-dark), var(--agora-dark-4));
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--font-serif);
+        font-size: 3.2rem;
+        color: var(--agora-gold-light);
+        border: 3px solid var(--agora-gold-dark);
+        box-shadow: 0 0 0 6px rgba(201,168,76,0.1);
+        flex-shrink: 0;
+    }
+    .philosopher-title {
+        font-family: var(--font-serif);
+        font-size: clamp(1.8rem, 4vw, 2.8rem);
+        color: var(--agora-parchment);
+        margin-bottom: 0.4rem;
+    }
+    .meta-pill {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        font-size: 0.82rem;
+        padding: 0.3rem 0.85rem;
+        border-radius: 50px;
+        background: rgba(201,168,76,0.1);
+        border: 1px solid var(--agora-border);
+        color: var(--agora-gold);
+    }
+    /* Sohbet başlat kutusu */
+    .cta-box {
+        background: var(--agora-card-bg);
+        border: 1px solid rgba(201,168,76,0.3);
+        border-radius: 14px;
+        padding: 1.8rem;
+        position: sticky;
+        top: 90px;
+    }
+    .cta-box h5 {
+        font-family: var(--font-serif);
+        font-size: 1.15rem;
+        color: var(--agora-parchment);
+    }
+    /* Bölüm başlıkları */
+    .section-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--agora-gold);
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        display: flex; align-items: center; gap: 0.5rem;
+    }
+    .section-label::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--agora-border);
+    }
+    /* Temel kavramlar */
+    .concept-grid {
+        display: flex; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .concept-tag {
+        font-size: 0.82rem;
+        padding: 0.35rem 0.85rem;
+        border-radius: 6px;
+        background: rgba(201,168,76,0.08);
+        border: 1px solid rgba(201,168,76,0.2);
+        color: var(--agora-parchment-dim);
+    }
+    /* Eser listesi */
+    .work-item {
+        display: flex; align-items: center; gap: 0.8rem;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        background: var(--agora-dark-3);
+        border: 1px solid var(--agora-border-light);
+        margin-bottom: 0.6rem;
+    }
+    .work-status-dot {
+        width: 10px; height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .work-status-dot.completed { background: #6dd68a; }
+    .work-status-dot.pending   { background: #ffc107; }
+    .work-status-dot.processing{ background: #0dcaf0; }
+    .work-status-dot.failed    { background: #dc3545; }
+    /* Biyografi metni */
+    .bio-text {
+        font-family: var(--font-body);
+        font-size: 0.95rem;
+        line-height: 1.85;
+        color: var(--agora-text);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Detay Hero ────────────────────────────────────────────────────────── #}
+<section class="detail-hero" data-initial="{{ philosopher.name|first }}">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb" style="font-size: 0.82rem;">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'philosophers:list' %}" class="text-gold">Filozoflar</a>
+                </li>
+                <li class="breadcrumb-item active text-agora-muted">{{ philosopher.name }}</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex flex-column flex-md-row align-items-start gap-4">
+            {# Avatar #}
+            {% if philosopher.avatar_url %}
+            <img src="{{ philosopher.avatar_url }}"
+                 alt="{{ philosopher.name }}" class="detail-avatar">
+            {% else %}
+            <div class="detail-avatar-placeholder">{{ philosopher.name|first }}</div>
+            {% endif %}
+
+            <div class="flex-grow-1">
+                <h1 class="philosopher-title">{{ philosopher.name }}</h1>
+
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="meta-pill">
+                        <i class="fas fa-hourglass-half fa-xs"></i>
+                        {{ philosopher.era }}
+                    </span>
+                    {% if philosopher.school %}
+                    <span class="meta-pill">
+                        <i class="fas fa-school fa-xs"></i>
+                        {{ philosopher.school }}
+                    </span>
+                    {% endif %}
+                    {% if philosopher.work_count > 0 %}
+                    <span class="meta-pill" style="color: #6dd68a; border-color: rgba(109,214,138,0.3); background: rgba(109,214,138,0.07);">
+                        <i class="fas fa-circle-check fa-xs"></i>
+                        {{ philosopher.work_count }} eser RAG'da
+                    </span>
+                    {% endif %}
+                </div>
+
+                <p class="bio-text mb-0" style="max-width: 720px; color: var(--agora-muted-light);">
+                    {{ philosopher.short_bio }}
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ── Ana İçerik ────────────────────────────────────────────────────────── #}
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
+
+            {# ── Sol: Biyografi, Kavramlar, Eserler ────────────────────── #}
+            <div class="col-lg-8">
+
+                {# Detaylı Biyografi #}
+                {% if philosopher.long_bio %}
+                <div class="mb-5">
+                    <div class="section-label">
+                        <i class="fas fa-scroll"></i>Biyografi
+                    </div>
+                    <div class="bio-text">
+                        {{ philosopher.long_bio|linebreaksbr }}
+                    </div>
+                </div>
+                {% endif %}
+
+                {# Temel Kavramlar #}
+                {% if core_concepts %}
+                <div class="mb-5">
+                    <div class="section-label">
+                        <i class="fas fa-atom"></i>Temel Kavramlar
+                    </div>
+                    <div class="concept-grid">
+                        {% for concept in core_concepts %}
+                        <span class="concept-tag">{{ concept }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {# İmza Üslubu #}
+                {% if philosopher.signature_style %}
+                <div class="mb-5">
+                    <div class="section-label">
+                        <i class="fas fa-pen-nib"></i>Düşünce ve Dil Üslubu
+                    </div>
+                    <div class="agora-card p-3">
+                        <p class="bio-text mb-0" style="font-style: italic; color: var(--agora-muted-light);">
+                            {{ philosopher.signature_style }}
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {# Felsefi Eserler #}
+                <div class="mb-4">
+                    <div class="section-label">
+                        <i class="fas fa-book"></i>Felsefi Eserler
+                        <span style="color: var(--agora-muted); font-size: 0.7rem; letter-spacing: 0; text-transform: none; font-weight: 400;">
+                            ({{ works_all.count }} eser, {{ works_ready.count }} RAG'da hazır)
+                        </span>
+                    </div>
+
+                    {% if works_all %}
+                    {% for work in works_all %}
+                    <div class="work-item">
+                        <div class="work-status-dot {{ work.ingestion_status }}"></div>
+                        <div class="flex-grow-1">
+                            <div style="font-size: 0.9rem; color: var(--agora-parchment);">
+                                {{ work.title }}
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--agora-muted);">
+                                {{ work.get_ingestion_status_display }}
+                                {% if work.chunk_count > 0 %}
+                                · {{ work.chunk_count }} parça
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if work.is_ready %}
+                        <span style="font-size: 0.72rem; color: #6dd68a;">
+                            <i class="fas fa-circle-check"></i>
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-agora-muted small fst-italic">
+                        Bu filozofa henüz eser yüklenmemiş. Eserler yüklendiğinde
+                        RAG sistemi daha otantik yanıtlar üretecektir.
+                    </p>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            {# ── Sağ: Sohbet Başlat CTA ────────────────────────────────── #}
+            <div class="col-lg-4">
+                <div class="cta-box">
+                    <h5 class="mb-3">
+                        <i class="fas fa-comments me-2 text-gold"></i>
+                        {{ philosopher.name }} ile Sohbet
+                    </h5>
+
+                    {% if session_count > 0 %}
+                    <p class="text-agora-muted" style="font-size: 0.85rem;">
+                        <i class="fas fa-history me-1"></i>
+                        Bu filozofla <strong class="text-gold">{{ session_count }}</strong>
+                        aktif sohbetin var.
+                    </p>
+                    {% endif %}
+
+                    <p class="text-agora-muted mb-4" style="font-size: 0.85rem;">
+                        {{ philosopher.name }}'{% if philosopher.name|last == 'a' or philosopher.name|last == 'e' or philosopher.name|last == 'i' %}yle{% else %}le{% endif %}
+                        her konuda soru sorabilir, tartışabilirsin.
+                        {% if philosopher.work_count > 0 %}
+                        Yanıtlar gerçek eserlerinden beslenir.
+                        {% endif %}
+                    </p>
+
+                    {# Özel modlar (varsa) #}
+                    {% with special_modes=philosopher.special_modes.all %}
+                    {% if special_modes %}
+                        {% for phil_mode in special_modes %}
+                        {% if phil_mode.is_active %}
+                        <a href="{% url 'conversations:new' philosopher.slug %}?mode={{ phil_mode.mode_key }}"
+                           class="btn {% if phil_mode.is_default %}btn-agora-gold{% else %}btn-agora-ghost{% endif %} w-100 mb-2">
+                            {{ phil_mode.button_label }}
+                            {% if phil_mode.button_description %}
+                            <span style="font-size:0.72rem; opacity:0.8; display:block; font-weight:400;">
+                                {{ phil_mode.button_description }}
+                            </span>
+                            {% endif %}
+                        </a>
+                        {% endif %}
+                        {% endfor %}
+
+                        {# Normal sohbet her zaman son seçenek #}
+                        <a href="{% url 'conversations:new' philosopher.slug %}?mode=normal"
+                           class="btn btn-agora-ghost w-100 mb-3" style="opacity:0.7;">
+                            <i class="fas fa-comments me-2"></i>Normal Sohbet
+                        </a>
+                    {% else %}
+                        {# Özel mod tanımlı değil — standart buton #}
+                        <a href="{% url 'conversations:new' philosopher.slug %}"
+                           class="btn btn-agora-gold w-100 mb-3">
+                            <i class="fas fa-plus me-2"></i>Yeni Sohbet Başlat
+                        </a>
+                    {% endif %}
+                    {% endwith %}
+
+                    {% if session_count > 0 %}
+                    <a href="{% url 'conversations:list' %}?philosopher={{ philosopher.slug }}"
+                       class="btn btn-agora-ghost w-100">
+                        <i class="fas fa-clock-rotate-left me-2"></i>Önceki Sohbetler
+                    </a>
+                    {% endif %}
+
+                    {# Zeitgeist bilgisi #}
+                    <hr style="border-color: var(--agora-border); margin: 1.5rem 0;">
+                    <div style="font-size: 0.8rem; color: var(--agora-muted);">
+                        <i class="fas fa-hourglass-half me-1 text-gold"></i>
+                        Mevcut modu: <strong style="color: var(--agora-parchment-dim);">
+                            {{ request.user.get_zeitgeist_mode_display }}
+                        </strong>
+                        <br>
+                        <a href="{% url 'accounts:profile' %}" class="text-gold"
+                           style="font-size: 0.78rem;">
+                            Profil ayarlarından değiştir →
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+{% endblock %}

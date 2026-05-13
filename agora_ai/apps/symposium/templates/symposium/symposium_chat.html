@@ -1,0 +1,614 @@
+{# PATH: apps/symposium/templates/symposium/symposium_chat.html #}
+{# Agora AI — Dinamik Sempozyum Sohbet Arayüzü (Seçenek B) #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sempozyum — {{ session.topic|truncatechars:40 }}{% endblock %}
+
+{% block extra_css %}
+<style>
+body.agora-body { overflow: hidden; }
+.symp-layout {
+    display: flex; flex-direction: column;
+    height: calc(100vh - 62px);
+}
+/* Topbar */
+.symp-topbar {
+    background: var(--agora-dark-2);
+    border-bottom: 1px solid var(--agora-border);
+    padding: 0.7rem 1.2rem;
+    display: flex; align-items: center; gap: 0.9rem;
+    flex-shrink: 0;
+}
+.symp-topic {
+    font-family: var(--font-serif); font-size: 0.95rem;
+    color: var(--agora-parchment); font-style: italic;
+    flex: 1; overflow: hidden; white-space: nowrap;
+    text-overflow: ellipsis;
+}
+/* Katılımcı rozetleri */
+.phil-pill {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.25rem 0.75rem; border-radius: 50px;
+    border: 1px solid var(--agora-border);
+    background: var(--agora-dark-3);
+    font-size: 0.78rem; color: var(--agora-muted-light);
+    transition: all 0.25s; cursor: pointer;
+}
+.phil-pill:hover { border-color: var(--agora-gold); color: var(--agora-gold); }
+.phil-pill.speaking {
+    border-color: var(--agora-gold);
+    background: rgba(201,168,76,0.12);
+    color: var(--agora-gold);
+}
+.phil-pill .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--agora-border);
+}
+.phil-pill.speaking .dot {
+    background: var(--agora-gold);
+    animation: pulse 1s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+/* Mesaj alanı */
+.symp-messages {
+    flex: 1; overflow-y: auto;
+    padding: 1.2rem 1.5rem;
+    display: flex; flex-direction: column; gap: 1rem;
+    background: var(--agora-dark-1);
+}
+/* Mesaj baloncukları */
+.turn-row { display: flex; gap: 0.75rem; animation: fadeInUp 0.3s ease; }
+.turn-row.user-row { flex-direction: row-reverse; }
+.turn-avatar {
+    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-serif); font-size: 1rem;
+    border: 1px solid var(--agora-border);
+}
+.turn-avatar.phil-avatar { background: var(--agora-dark-3); color: var(--agora-gold); }
+.turn-avatar.user-avatar { background: rgba(201,168,76,0.15); color: var(--agora-gold); }
+.turn-avatar.system-avatar { background: var(--agora-dark-3); color: var(--agora-muted); font-size: 0.75rem; }
+.turn-bubble {
+    max-width: 75%;
+    padding: 0.85rem 1.1rem;
+    border-radius: 12px;
+    font-size: 0.9rem; line-height: 1.75;
+}
+.phil-bubble {
+    background: var(--agora-card-bg);
+    border: 1px solid var(--agora-border);
+    color: var(--agora-text);
+    border-bottom-left-radius: 4px;
+    font-family: var(--font-body);
+}
+.user-bubble {
+    background: rgba(201,168,76,0.1);
+    border: 1px solid rgba(201,168,76,0.2);
+    color: var(--agora-parchment);
+    border-bottom-right-radius: 4px;
+}
+.system-bubble {
+    background: rgba(13,202,240,0.05);
+    border: 1px solid rgba(13,202,240,0.15);
+    color: var(--agora-muted-light);
+    font-style: italic; font-size: 0.85rem;
+}
+.turn-name { font-size: 0.72rem; color: var(--agora-gold); margin-bottom: 0.25rem; font-weight: 600; }
+.streaming-cursor::after { content:'▌'; color:var(--agora-gold); animation: blink 0.8s step-end infinite; }
+@keyframes blink { 50%{opacity:0;} }
+/* Typing indicator */
+.typing-indicator {
+    display: flex; gap: 0.35rem; padding: 0.7rem 1rem;
+    background: var(--agora-dark-3); border: 1px solid var(--agora-border);
+    border-radius: 12px; border-bottom-left-radius: 4px; max-width: 70px;
+}
+.typing-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--agora-gold); opacity: 0.4;
+    animation: typingPulse 1.2s infinite;
+}
+.typing-dot:nth-child(2){animation-delay:0.2s;}
+.typing-dot:nth-child(3){animation-delay:0.4s;}
+@keyframes typingPulse{0%,60%,100%{opacity:0.4;transform:scale(1);}30%{opacity:1;transform:scale(1.2);}}
+/* Aksiyon çubuğu */
+.symp-actions {
+    border-top: 1px solid var(--agora-border);
+    background: var(--agora-dark-2);
+    padding: 0.9rem 1.2rem;
+    flex-shrink: 0;
+}
+.action-btns { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; margin-bottom: 0.75rem; }
+.btn-action {
+    padding: 0.5rem 1.1rem; border-radius: 8px;
+    font-size: 0.82rem; font-weight: 600;
+    border: 1px solid var(--agora-border);
+    background: var(--agora-dark-3); color: var(--agora-muted-light);
+    cursor: pointer; transition: all 0.2s;
+}
+.btn-action:hover:not(:disabled) { border-color: var(--agora-gold); color: var(--agora-gold); }
+.btn-action:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-action.primary {
+    background: linear-gradient(135deg, var(--agora-gold-dark), var(--agora-gold));
+    border-color: var(--agora-gold); color: var(--agora-dark-1);
+}
+.btn-action.danger { border-color: rgba(220,53,69,0.4); color: #f87171; }
+.btn-action.danger:hover { background: rgba(220,53,69,0.1); }
+/* Kullanıcı giriş alanı */
+.user-input-row {
+    display: flex; gap: 0.6rem; align-items: flex-end;
+    max-width: 800px; margin: 0 auto;
+}
+#userInput {
+    flex: 1; min-height: 40px; max-height: 100px;
+    resize: none; overflow-y: auto;
+    background: var(--agora-dark-3);
+    border: 1px solid var(--agora-border);
+    border-radius: 8px; color: var(--agora-text);
+    padding: 0.55rem 0.9rem;
+    font-family: var(--font-body); font-size: 0.88rem;
+    transition: border-color 0.2s;
+}
+#userInput:focus { border-color: var(--agora-gold); outline: none; }
+#userInput::placeholder { color: var(--agora-muted); }
+#sendUserBtn {
+    width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0;
+    background: var(--agora-dark-3); border: 1px solid var(--agora-border);
+    color: var(--agora-gold); cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+}
+#sendUserBtn:hover { border-color: var(--agora-gold); background: rgba(201,168,76,0.1); }
+/* Özet alanı */
+#summaryBox {
+    background: var(--agora-dark-3); border: 1px solid rgba(13,202,240,0.2);
+    border-radius: 10px; padding: 1rem 1.2rem;
+    font-size: 0.88rem; line-height: 1.8; color: var(--agora-text);
+    display: none; margin-top: 0.75rem;
+}
+/* Filozof seçici butonları */
+.phil-ask-btn {
+    padding: 0.3rem 0.75rem; border-radius: 6px;
+    font-size: 0.75rem; border: 1px solid var(--agora-border);
+    background: var(--agora-dark-3); color: var(--agora-muted-light);
+    cursor: pointer; transition: all 0.15s;
+}
+.phil-ask-btn:hover { border-color: var(--agora-gold); color: var(--agora-gold); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="symp-layout">
+
+    {# ── Topbar ─────────────────────────────────────────────── #}
+    <div class="symp-topbar">
+        <a href="{% url 'symposium:list' %}" style="color:var(--agora-muted); font-size:0.8rem; text-decoration:none;">
+            ← Sempozyumlar
+        </a>
+        <div class="symp-topic">"{{ session.topic }}"</div>
+        <div class="d-flex gap-2 flex-wrap" id="philPills">
+            {% for p in philosophers %}
+            <div class="phil-pill" id="pill-{{ p.pk }}" data-id="{{ p.pk }}"
+                 data-name="{{ p.name|escapejs }}"
+                 data-avatar="{% if p.avatar_image %}{{ p.avatar_image.url }}{% endif %}"
+                 onclick="askSpecific({{ p.pk }})">
+                <div class="dot"></div>
+                {% if p.avatar_image %}
+                <img src="{{ p.avatar_image.url }}" alt="{{ p.name }}"
+                     style="width:20px;height:20px;border-radius:50%;object-fit:cover;">
+                {% endif %}
+                {{ p.name }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# ── Mesajlar ────────────────────────────────────────────── #}
+    <div class="symp-messages" id="sympMessages">
+
+        {# Hoş geldin #}
+        {% if not turns %}
+        <div class="text-center py-5" id="welcomeMsg" style="color:var(--agora-muted);">
+            <p class="font-serif" style="font-size:1.1rem; color:var(--agora-parchment);">
+                Sempozyum hazır.
+            </p>
+            <p style="font-size:0.88rem;">
+                "Devam Et" butonuna basarak ilk filozofu konuştur.<br>
+                İstediğin zaman araya girebilir veya belirli bir filozofu seçebilirsin.
+            </p>
+        </div>
+        {% endif %}
+
+        {# Geçmiş turlar #}
+        {% for turn in turns %}
+        <div class="turn-row {% if turn.role == 'user' %}user-row{% endif %}">
+            <div class="turn-avatar {% if turn.role == 'philosopher' %}phil-avatar{% elif turn.role == 'user' %}user-avatar{% else %}system-avatar{% endif %}">
+                {% if turn.philosopher %}
+                {% if turn.philosopher.avatar_image %}
+                    <img src="{{ turn.philosopher.avatar_image.url }}"
+                         alt="{{ turn.philosopher.name }}"
+                         style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+                {% else %}
+                    {{ turn.philosopher.name|first }}
+                {% endif %}
+            {% elif turn.role == 'user' %}
+                <i class="fas fa-user fa-xs"></i>
+            {% else %}
+                <i class="fas fa-scroll fa-xs"></i>
+            {% endif %}
+            </div>
+            <div>
+                {% if turn.philosopher %}
+                <div class="turn-name">{{ turn.philosopher.name }}</div>
+                {% elif turn.role == 'user' %}
+                <div class="turn-name" style="text-align:right; color:var(--agora-muted);">Sen</div>
+                {% else %}
+                <div class="turn-name" style="color:var(--agora-muted);">Özet</div>
+                {% endif %}
+                <div class="turn-bubble {% if turn.role == 'philosopher' %}phil-bubble{% elif turn.role == 'user' %}user-bubble{% else %}system-bubble{% endif %}">
+                    {{ turn.content|linebreaksbr }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+
+    {# ── Aksiyon Çubuğu ──────────────────────────────────────── #}
+    <div class="symp-actions">
+
+        {# Ana butonlar #}
+        <div class="action-btns">
+            <button class="btn-action primary" id="continueBtn" onclick="continueDiscussion()">
+                <i class="fas fa-play me-1"></i> Devam Et
+            </button>
+
+            {# Belirli filozofa sor #}
+            {% for p in philosophers %}
+            <button class="btn-action phil-ask-btn" onclick="askSpecific({{ p.pk }})" id="askBtn-{{ p.pk }}">
+                {{ p.name|truncatechars:12 }}'{% if p.name|last == 'a' or p.name|last == 'e' or p.name|last == 'ı' or p.name|last == 'i' %}e{% else %}a{% endif %} Sor
+            </button>
+            {% endfor %}
+
+            <button class="btn-action danger" id="summaryBtn" onclick="requestSummary()">
+                <i class="fas fa-scroll me-1"></i> Bitir & Özetle
+            </button>
+        </div>
+
+        {# Kullanıcı giriş #}
+        <div class="user-input-row">
+            <textarea id="userInput" rows="1"
+                placeholder="Araya girmek için yaz... (Enter → gönder)"
+                maxlength="2000"></textarea>
+            <button id="sendUserBtn" onclick="sendUserMessage()" title="Gönder">
+                <i class="fas fa-paper-plane fa-xs"></i>
+            </button>
+        </div>
+
+        {# Özet kutusu #}
+        <div id="summaryBox"></div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+'use strict';
+
+const SESSION_ID   = {{ session.pk }};
+const SSE_TURN_URL = "{% url 'symposium:sse_turn' session.pk %}";
+const INTERVENE_URL= "{% url 'symposium:intervene' session.pk %}";
+const SUMMARY_URL  = "{% url 'symposium:sse_summary' session.pk %}";
+const CSRF_TOKEN   = "{{ csrf_token }}";
+
+const messagesBox  = document.getElementById('sympMessages');
+const continueBtn  = document.getElementById('continueBtn');
+const summaryBtn   = document.getElementById('summaryBtn');
+const userInput    = document.getElementById('userInput');
+const summaryBox   = document.getElementById('summaryBox');
+
+// Filozof avatar URL'leri
+const PHIL_AVATARS = {
+    {% for p in philosophers %}
+    {{ p.pk }}: "{% if p.avatar_image %}{{ p.avatar_image.url }}{% endif %}",
+    {% endfor %}
+};
+
+function getPhilAvatar(philosopherName, philosopherId){
+    // ID ile ara
+    if(philosopherId && PHIL_AVATARS[philosopherId]){
+        return `<img src="${PHIL_AVATARS[philosopherId]}"
+                     style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="">`;
+    }
+    // İsimle eşleştir
+    const pills = document.querySelectorAll('.phil-pill');
+    for(const pill of pills){
+        if(pill.dataset.name === philosopherName && pill.dataset.avatar){
+            return `<img src="${pill.dataset.avatar}"
+                         style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="">`;
+        }
+    }
+    // Fallback: baş harf
+    return philosopherName ? philosopherName.charAt(0) : '?';
+}
+
+let isStreaming = false;
+
+/* ── Yardımcılar ───────────────────────────────────────────── */
+function scrollBottom(){
+    messagesBox.scrollTo({ top: messagesBox.scrollHeight, behavior:'smooth' });
+}
+
+function setStreaming(val){
+    isStreaming = val;
+    continueBtn.disabled     = val;
+    summaryBtn.disabled      = val;
+    document.querySelectorAll('.phil-ask-btn').forEach(b => b.disabled = val);
+}
+
+function setPillSpeaking(name){
+    document.querySelectorAll('.phil-pill').forEach(p => p.classList.remove('speaking'));
+    const pill = [...document.querySelectorAll('.phil-pill')]
+        .find(p => p.dataset.name === name);
+    if(pill) pill.classList.add('speaking');
+}
+
+function clearSpeaking(){
+    document.querySelectorAll('.phil-pill').forEach(p => p.classList.remove('speaking'));
+}
+
+function removeWelcome(){
+    const w = document.getElementById('welcomeMsg');
+    if(w) w.remove();
+}
+
+function addTypingIndicator(philosopherName, philosopherId){
+    const row = document.createElement('div');
+    row.className = 'turn-row';
+    row.id = 'typingRow';
+    row.innerHTML = `
+        <div class="turn-avatar phil-avatar">${getPhilAvatar(philosopherName, philosopherId)}</div>
+        <div>
+            <div class="turn-name">${philosopherName}</div>
+            <div class="typing-indicator">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>`;
+    messagesBox.appendChild(row);
+    scrollBottom();
+    return row;
+}
+
+function addPhilBubble(philosopherName, philosopherId){
+    const row = document.createElement('div');
+    row.className = 'turn-row';
+    const bubbleId = 'bubble-' + Date.now();
+    row.innerHTML = `
+        <div class="turn-avatar phil-avatar">${getPhilAvatar(philosopherName, philosopherId)}</div>
+        <div style="max-width:75%;">
+            <div class="turn-name">${philosopherName}</div>
+            <div class="turn-bubble phil-bubble streaming-cursor" id="${bubbleId}"></div>
+        </div>`;
+    messagesBox.appendChild(row);
+    scrollBottom();
+    return document.getElementById(bubbleId);
+}
+
+function addUserBubble(content){
+    const row = document.createElement('div');
+    row.className = 'turn-row user-row';
+    row.innerHTML = `
+        <div class="turn-avatar user-avatar"><i class="fas fa-user fa-xs"></i></div>
+        <div>
+            <div class="turn-name" style="text-align:right; color:var(--agora-muted);">Sen</div>
+            <div class="turn-bubble user-bubble">${content.replace(/\n/g,'<br>')}</div>
+        </div>`;
+    messagesBox.appendChild(row);
+    scrollBottom();
+}
+
+/* ── SSE Philosopher Turn ──────────────────────────────────── */
+function startPhilosopherSSE(url){
+    if(isStreaming) return;
+    setStreaming(true);
+    removeWelcome();
+
+    let typingRow       = null;
+    let bubble          = null;
+    let accumulated     = '';
+    let currentPhilName = '';
+
+    const source = new EventSource(url);
+
+    source.addEventListener('message', function(e){
+        if(!e.data || e.data.trim() === '') return;
+
+        if(e.data === '[DONE]'){
+            source.close();
+            if(bubble) bubble.classList.remove('streaming-cursor');
+            clearSpeaking();
+            setStreaming(false);
+            // Değişkenleri sıfırla
+            bubble          = null;
+            accumulated     = '';
+            currentPhilName = '';
+            return;
+        }
+
+        let data;
+        try{ data = JSON.parse(e.data); }
+        catch(err){ console.warn('SSE parse hatası:', e.data); return; }
+
+        if(data.type === 'start'){
+            // Yeni tur başlıyor — önceki baloncuğu koru, sıfırla
+            currentPhilName = data.philosopher;
+            bubble          = null;
+            accumulated     = '';
+            setPillSpeaking(currentPhilName);
+            if(typingRow){ typingRow.remove(); typingRow = null; }
+            typingRow = addTypingIndicator(currentPhilName, data.philosopher_id);
+
+        } else if(data.type === 'token'){
+            // İlk token gelince typing göstergesini kaldır, baloncuk oluştur
+            if(typingRow){ typingRow.remove(); typingRow = null; }
+            if(!bubble){
+                if(!currentPhilName) currentPhilName = data.philosopher || '?';
+                bubble = addPhilBubble(currentPhilName, data.philosopher_id);
+            }
+            accumulated += data.token;
+            bubble.innerHTML = accumulated
+                .replace(/&/g,'&amp;')
+                .replace(/</g,'&lt;')
+                .replace(/>/g,'&gt;')
+                .replace(/\n/g,'<br>');
+            scrollBottom();
+
+        } else if(data.type === 'end'){
+            if(bubble) bubble.classList.remove('streaming-cursor');
+            bubble          = null;
+            accumulated     = '';
+            currentPhilName = '';
+            clearSpeaking();
+            setStreaming(false);
+            source.close();
+
+        } else if(data.type === 'error'){
+            if(typingRow){ typingRow.remove(); typingRow = null; }
+            if(bubble)   bubble.classList.remove('streaming-cursor');
+            clearSpeaking();
+            setStreaming(false);
+            source.close();
+            window.Agora.showFlash('Hata: ' + data.message, 'error');
+        }
+    });
+
+    source.addEventListener('error', function(){
+        if(typingRow){ typingRow.remove(); typingRow = null; }
+        if(bubble)   bubble.classList.remove('streaming-cursor');
+        clearSpeaking();
+        setStreaming(false);
+        source.close();
+    });
+}
+
+/* ── Aksiyon Fonksiyonları ─────────────────────────────────── */
+window.continueDiscussion = function(){
+    if(isStreaming) return;
+    startPhilosopherSSE(SSE_TURN_URL);
+};
+
+window.askSpecific = function(philosopherId){
+    if(isStreaming) return;
+    startPhilosopherSSE(SSE_TURN_URL + '?philosopher_id=' + philosopherId);
+};
+
+window.sendUserMessage = async function(){
+    const text = userInput.value.trim();
+    if(!text || isStreaming) return;
+    userInput.value = '';
+    userInput.style.height = 'auto';
+
+    // Ekranda göster
+    addUserBubble(text);
+    removeWelcome();
+    scrollBottom();
+
+    try{
+        const resp = await fetch(INTERVENE_URL, {
+            method: 'POST',
+            headers:{
+                'Content-Type': 'application/json',
+                'X-CSRFToken':  CSRF_TOKEN,
+            },
+            body: JSON.stringify({message: text}),
+        });
+        if(!resp.ok){
+            const err = await resp.json();
+            window.Agora.showFlash(err.error || 'Mesaj gönderilemedi.', 'error');
+            return;
+        }
+        // Başarılı — kullanıcıya ipucu ver
+        window.Agora.showFlash(
+            '"Devam Et" veya bir filozofun adına basarak yanıt alabilirsin.',
+            'info',
+            4000
+        );
+    } catch(err){
+        window.Agora.showFlash('Ağ hatası: ' + err.message, 'error');
+    }
+};
+
+window.requestSummary = function(){
+    if(isStreaming) return;
+    if(!confirm('Tartışmayı bitirip özet oluşturmak istiyor musunuz?')) return;
+
+    setStreaming(true);
+    summaryBox.style.display = 'block';
+    summaryBox.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Özet hazırlanıyor...';
+    scrollBottom();
+
+    let accumulated = '';
+    const source = new EventSource(SUMMARY_URL);
+
+    source.addEventListener('message', function(e){
+        if(!e.data || e.data.trim() === '') return;
+        if(e.data === '[DONE]'){
+            source.close();
+            setStreaming(false);
+            continueBtn.disabled = true;
+            summaryBtn.disabled  = true;
+            document.querySelectorAll('.phil-ask-btn').forEach(b => b.disabled = true);
+            return;
+        }
+        let data;
+        try{ data = JSON.parse(e.data); } catch(_){ return; }
+
+        if(data.type === 'summary_start'){
+            summaryBox.innerHTML = '';
+            accumulated = '';
+        } else if(data.type === 'token'){
+            accumulated += data.token;
+            summaryBox.innerHTML = accumulated
+                .replace(/&/g,'&amp;')
+                .replace(/</g,'&lt;')
+                .replace(/>/g,'&gt;')
+                .replace(/\n/g,'<br>');
+            scrollBottom();
+        } else if(data.type === 'summary_end'){
+            source.close();
+            setStreaming(false);
+        } else if(data.type === 'error'){
+            summaryBox.innerHTML = '<span style="color:#f87171;">Hata: ' + data.message + '</span>';
+            source.close();
+            setStreaming(false);
+        }
+    });
+
+    source.addEventListener('error', function(){
+        source.close();
+        setStreaming(false);
+    });
+};
+
+/* ── Klavye kısayolları ────────────────────────────────────── */
+userInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault();
+        window.sendUserMessage();
+    }
+});
+
+userInput.addEventListener('input', function(){
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+});
+
+/* ── İlk yüklemede en alta in ──────────────────────────────── */
+scrollBottom();
+
+})();
+</script>
+{% endblock %}

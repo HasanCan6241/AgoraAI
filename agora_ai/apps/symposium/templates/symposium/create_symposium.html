@@ -1,0 +1,209 @@
+{# PATH: apps/symposium/templates/symposium/create_symposium.html #}
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Yeni Sempozyum{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-hero {
+    background: linear-gradient(180deg, var(--agora-dark-2) 0%, var(--agora-dark-1) 100%);
+    border-bottom: 1px solid var(--agora-border-light);
+    padding: 2.5rem 0 2rem;
+}
+.phil-select-card {
+    background: var(--agora-dark-3);
+    border: 2px solid var(--agora-border);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 0.9rem;
+    user-select: none;
+}
+.phil-select-card:hover { border-color: rgba(201,168,76,0.4); }
+.phil-select-card.selected {
+    border-color: var(--agora-gold);
+    background: rgba(201,168,76,0.07);
+}
+.phil-select-card.disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+.phil-check {
+    width: 22px; height: 22px; border-radius: 6px;
+    border: 2px solid var(--agora-border);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.15s; color: var(--agora-dark-1);
+}
+.phil-select-card.selected .phil-check {
+    background: var(--agora-gold); border-color: var(--agora-gold);
+}
+.phil-avatar-sm {
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--agora-gold-dark), var(--agora-dark-4));
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-serif); font-size: 1rem; color: var(--agora-gold-light);
+}
+.phil-name { font-family: var(--font-serif); font-size: 0.95rem; color: var(--agora-parchment); }
+.phil-era  { font-size: 0.72rem; color: var(--agora-muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb" style="font-size:0.82rem;">
+                <li class="breadcrumb-item"><a href="{% url 'philosophers:list' %}" class="text-gold">Agora</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'symposium:list' %}" class="text-gold">Sempozyumlar</a></li>
+                <li class="breadcrumb-item active text-agora-muted">Yeni Sempozyum</li>
+            </ol>
+        </nav>
+        <h1 class="font-serif mb-1" style="font-size:2rem;">
+            <i class="fas fa-theater-masks me-2 text-gold"></i>Sempozyum Başlat
+        </h1>
+        <p class="text-agora-muted mb-0">
+            2-4 filozofu seç, bir konu belirle. İstediğin zaman araya girebilir,
+            belirli bir filozofu konuşturabilirsin.
+        </p>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <form method="post" action="{% url 'symposium:create' %}" id="symposiumForm">
+                {% csrf_token %}
+
+                {# 1. Konu #}
+                <div class="agora-card p-4 mb-4">
+                    <h5 class="font-serif mb-3 text-parchment">
+                        <span class="text-gold me-2">1.</span>Tartışma Konusu
+                    </h5>
+                    <textarea name="topic" id="topicInput" class="form-control" rows="3"
+                        maxlength="500"
+                        placeholder="ör: Özgür irade var mıdır? · Adalet nedir? · Ahlakın temeli ne olmalı?"
+                        required>{{ form_data.topic|default:'' }}</textarea>
+                    <div class="d-flex justify-content-between mt-1">
+                        <div class="form-text">Net ve tartışmaya açık bir soru en iyi sonucu verir.</div>
+                        <span id="topicCount" style="font-size:0.78rem; color:var(--agora-muted);">0/500</span>
+                    </div>
+                </div>
+
+                {# 2. Filozoflar #}
+                <div class="agora-card p-4 mb-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h5 class="font-serif mb-0 text-parchment">
+                            <span class="text-gold me-2">2.</span>Katılımcı Filozoflar
+                        </h5>
+                        <span id="selectionCount" class="text-agora-muted" style="font-size:0.85rem;">
+                            0/4 seçildi
+                        </span>
+                    </div>
+                    <div class="row g-3">
+                        {% for philosopher in philosophers %}
+                        <div class="col-md-6">
+                            <div class="phil-select-card" data-id="{{ philosopher.pk }}"
+                                 onclick="togglePhilosopher(this)">
+                                <div class="phil-check">
+                                    <i class="fas fa-check fa-xs" style="display:none;"></i>
+                                </div>
+                                <!-- Yeni Kod: -->
+                                <div class="phil-avatar-sm" style="overflow: hidden; padding: 0;">
+                                    {% if philosopher.avatar_url %}
+                                        <img src="{{ philosopher.avatar_url }}" alt="{{ philosopher.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                    {% else %}
+                                        {{ philosopher.name|first }}
+                                    {% endif %}
+                                </div>
+                                                                <div>
+                                    <div class="phil-name">{{ philosopher.name }}</div>
+                                    <div class="phil-era">{{ philosopher.era }}</div>
+                                </div>
+                                <input type="checkbox" name="philosophers"
+                                       value="{{ philosopher.pk }}" class="d-none phil-hidden-input">
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div id="selectionError" class="text-danger mt-2" style="font-size:0.82rem; display:none;">
+                        En az 2, en fazla 4 filozof seçmelisiniz.
+                    </div>
+                </div>
+
+                {# 3. Zeitgeist #}
+                <div class="agora-card p-4 mb-4">
+                    <h5 class="font-serif mb-3 text-parchment">
+                        <span class="text-gold me-2">3.</span>Zeitgeist Modu
+                    </h5>
+                    <div class="row g-3">
+                        {% for value, label in zeitgeist_choices %}
+                        <div class="col-sm-6">
+                            <label style="display:flex; align-items:center; gap:0.8rem;
+                                          background:var(--agora-dark-3); border:2px solid var(--agora-border);
+                                          border-radius:10px; padding:1rem; cursor:pointer;
+                                          transition: border-color 0.15s;">
+                                <input type="radio" name="zeitgeist_mode" value="{{ value }}"
+                                       {% if value == 'classical' %}checked{% endif %}
+                                       style="accent-color:var(--agora-gold);">
+                                <span style="font-size:0.9rem; color:var(--agora-parchment);">{{ label }}</span>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {% if errors %}
+                <div class="alert alert-danger agora-alert mb-4">
+                    {% for err in errors %}
+                    <p class="mb-0"><i class="fas fa-circle-xmark me-1"></i>{{ err }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <button type="submit" id="submitBtn" class="btn btn-agora-gold btn-lg w-100">
+                    <i class="fas fa-play me-2"></i>Sempozyumu Başlat
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    let selectedCount = 0;
+    const maxSelect   = 4;
+
+    const topicInput = document.getElementById('topicInput');
+    const topicCount = document.getElementById('topicCount');
+    topicInput.addEventListener('input', () => {
+        topicCount.textContent = topicInput.value.length + '/500';
+    });
+
+    window.togglePhilosopher = function(card){
+        const checkbox  = card.querySelector('.phil-hidden-input');
+        const checkIcon = card.querySelector('.phil-check i');
+        const isSelected = card.classList.contains('selected');
+        if(!isSelected && selectedCount >= maxSelect) return;
+        card.classList.toggle('selected');
+        checkbox.checked = !isSelected;
+        if(!isSelected){ selectedCount++; checkIcon.style.display = 'inline'; }
+        else            { selectedCount--; checkIcon.style.display = 'none';   }
+        document.getElementById('selectionCount').textContent = selectedCount + '/4 seçildi';
+        document.getElementById('selectionCount').style.color =
+            selectedCount >= 2 ? 'var(--agora-gold)' : 'var(--agora-muted)';
+        document.querySelectorAll('.phil-select-card').forEach(c => {
+            if(!c.classList.contains('selected'))
+                c.classList.toggle('disabled', selectedCount >= maxSelect);
+        });
+    };
+
+    document.getElementById('symposiumForm').addEventListener('submit', function(e){
+        if(selectedCount < 2){
+            e.preventDefault();
+            document.getElementById('selectionError').style.display = 'block';
+            document.getElementById('selectionError').scrollIntoView({behavior:'smooth'});
+        }
+    });
+})();
+</script>
+{% endblock %}

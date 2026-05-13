@@ -1,0 +1,274 @@
+{# PATH: apps/glossary/templates/glossary/concept_detail.html #}
+{# Agora AI — Felsefi Kavram Detayı #}
+{% extends "base.html" %}
+
+{% block title %}{{ concept.name }} — Kavram Sözlüğü{% endblock %}
+
+{% block extra_css %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap');
+
+    /* ── Page wrapper ── */
+    .detail-page { padding: 3.5rem 0 5rem; }
+
+    /* ── Breadcrumb ── */
+    .breadcrumb {
+        font-size: 0.75rem;
+        letter-spacing: 0.04em;
+        background: none;
+        padding: 0;
+        margin-bottom: 2rem;
+    }
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: '›';
+        color: var(--agora-border);
+    }
+    .breadcrumb-item a {
+        color: var(--agora-gold);
+        text-decoration: none;
+        opacity: 0.85;
+        transition: opacity 0.15s;
+    }
+    .breadcrumb-item a:hover { opacity: 1; }
+    .breadcrumb-item.active { color: var(--agora-muted-light); }
+
+    /* ── Card ── */
+    .concept-card {
+        background: var(--agora-card-bg);
+        border: 1px solid var(--agora-border-light);
+        border-radius: 14px;
+        padding: 3rem 3.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .concept-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--agora-gold), transparent);
+        opacity: 0.5;
+    }
+    .concept-card::after {
+        content: '';
+        position: absolute;
+        top: -60px; right: -60px;
+        width: 200px; height: 200px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(201,168,76,0.05) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    @media (max-width: 576px) {
+        .concept-card { padding: 2rem 1.5rem; }
+    }
+
+    /* ── Header ── */
+    .concept-header { margin-bottom: 1.75rem; }
+    .concept-title {
+        font-family: 'Playfair Display', serif;
+        font-size: clamp(1.8rem, 4vw, 2.6rem);
+        font-weight: 400;
+        color: var(--agora-parchment);
+        line-height: 1.2;
+        letter-spacing: -0.015em;
+        margin-bottom: 0.3rem;
+    }
+    .concept-original {
+        font-family: 'Crimson Pro', serif;
+        font-style: italic;
+        font-size: 1.05rem;
+        color: var(--agora-gold);
+        opacity: 0.85;
+        letter-spacing: 0.02em;
+    }
+
+    /* ── Philosopher tags ── */
+    .philosopher-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    .philosopher-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-family: 'Crimson Pro', serif;
+        font-size: 0.85rem;
+        padding: 0.3rem 0.85rem;
+        border-radius: 40px;
+        border: 1px solid var(--agora-border);
+        color: var(--agora-gold);
+        background: rgba(201,168,76,0.05);
+        text-decoration: none;
+        transition: all 0.18s ease;
+        letter-spacing: 0.01em;
+    }
+    .philosopher-tag:hover {
+        border-color: rgba(201,168,76,0.5);
+        background: rgba(201,168,76,0.1);
+        color: var(--agora-gold);
+        transform: translateY(-1px);
+    }
+    .philosopher-tag i { font-size: 0.7rem; opacity: 0.7; }
+
+    /* ── Section label ── */
+    .section-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--agora-gold);
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        opacity: 0.85;
+    }
+    .section-label i { font-size: 0.65rem; opacity: 0.8; }
+
+    /* ── Definition text ── */
+    .definition-short {
+        font-family: 'Crimson Pro', serif;
+        font-size: 1.1rem;
+        line-height: 1.85;
+        color: var(--agora-text);
+        font-weight: 400;
+    }
+    .definition-long {
+        font-family: 'Crimson Pro', serif;
+        font-size: 1rem;
+        line-height: 1.9;
+        color: var(--agora-text);
+        font-weight: 300;
+    }
+
+    /* ── Divider ── */
+    .section-divider {
+        border: none;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--agora-border), transparent);
+        margin: 2rem 0;
+    }
+
+    /* ── Related concepts ── */
+    .related-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .related-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-family: 'Crimson Pro', serif;
+        font-size: 0.9rem;
+        padding: 0.35rem 0.9rem;
+        border-radius: 6px;
+        border: 1px solid var(--agora-border);
+        color: var(--agora-parchment-dim, var(--agora-muted-light));
+        background: var(--agora-dark-3);
+        text-decoration: none;
+        letter-spacing: 0.01em;
+        transition: all 0.18s ease;
+    }
+    .related-tag:hover {
+        border-color: rgba(201,168,76,0.35);
+        color: var(--agora-parchment);
+        background: rgba(201,168,76,0.05);
+    }
+
+    /* ── Back button ── */
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: 'Crimson Pro', serif;
+        font-size: 0.9rem;
+        letter-spacing: 0.04em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-page">
+<div class="container">
+<div class="row justify-content-center">
+<div class="col-lg-7 col-xl-6">
+
+    <nav aria-label="breadcrumb" class="mb-0">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'glossary:list' %}">Kavram Sözlüğü</a>
+            </li>
+            <li class="breadcrumb-item active">{{ concept.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="concept-card">
+
+        {# ── Başlık ── #}
+        <div class="concept-header">
+            <h1 class="concept-title">{{ concept.name }}</h1>
+            {% if concept.original_term %}
+            <p class="concept-original">{{ concept.original_term }}</p>
+            {% endif %}
+        </div>
+
+        {# ── Filozoflar ── #}
+        {% if concept.philosophers.all %}
+        <div class="philosopher-tags">
+            {% for p in concept.philosophers.all %}
+            <a href="{% url 'philosophers:detail' p.slug %}" class="philosopher-tag">
+                <i class="fas fa-user-circle"></i>{{ p.name }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {# ── Kısa Tanım ── #}
+        <div class="section-label">
+            <i class="fas fa-align-left"></i>Tanım
+        </div>
+        <p class="definition-short">{{ concept.short_definition }}</p>
+
+        {# ── Uzun Tanım ── #}
+        {% if concept.long_definition %}
+        <hr class="section-divider">
+        <div class="section-label">
+            <i class="fas fa-scroll"></i>Ayrıntılı Açıklama
+        </div>
+        <div class="definition-long">
+            {{ concept.long_definition|linebreaksbr }}
+        </div>
+        {% endif %}
+
+        {# ── İlişkili Kavramlar ── #}
+        {% if related %}
+        <hr class="section-divider">
+        <div class="section-label">
+            <i class="fas fa-link"></i>İlişkili Kavramlar
+        </div>
+        <div class="related-grid">
+            {% for rc in related %}
+            <a href="{% url 'glossary:detail' rc.slug %}" class="related-tag">
+                {{ rc.name }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+    </div>{# /concept-card #}
+
+    <div class="text-center mt-4">
+        <a href="{% url 'glossary:list' %}" class="btn btn-agora-ghost back-btn">
+            <i class="fas fa-arrow-left" style="font-size:0.8rem;"></i>
+            Sözlüğe Dön
+        </a>
+    </div>
+
+</div>
+</div>
+</div>
+</div>
+{% endblock %}

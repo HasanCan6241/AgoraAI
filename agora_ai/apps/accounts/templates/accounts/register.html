@@ -1,0 +1,208 @@
+{# PATH: apps/accounts/templates/accounts/register.html #}
+{# Agora AI — Kullanıcı Kayıt Sayfası #}
+{# Doküman Bölüm 6/AŞAMA 2: Kayıt HTML şablonu #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Agora'ya Katıl{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-wrapper {
+        min-height: calc(100vh - 80px);
+        display: flex;
+        align-items: center;
+        background: radial-gradient(ellipse at top, var(--agora-dark-2) 0%, var(--agora-dark-1) 70%);
+        padding: 3rem 0;
+    }
+    .auth-card {
+        background: var(--agora-card-bg);
+        border: 1px solid var(--agora-border);
+        border-radius: 16px;
+        padding: 2.5rem;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    .auth-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.9rem;
+        color: var(--agora-parchment);
+        text-align: center;
+        margin-bottom: 0.3rem;
+    }
+    .auth-subtitle {
+        color: var(--agora-muted);
+        font-size: 0.9rem;
+        text-align: center;
+        font-family: 'Lora', serif;
+        margin-bottom: 2rem;
+    }
+    .form-group { margin-bottom: 1.2rem; }
+    .divider-text {
+        color: var(--agora-muted);
+        font-size: 0.82rem;
+        position: relative;
+        text-align: center;
+    }
+    .divider-text::before,
+    .divider-text::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        width: 42%;
+        height: 1px;
+        background: var(--agora-border);
+    }
+    .divider-text::before { left: 0; }
+    .divider-text::after  { right: 0; }
+    .zeitgeist-info {
+        background: rgba(201, 168, 76, 0.07);
+        border: 1px solid var(--agora-border);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        font-size: 0.82rem;
+        color: var(--agora-muted-light);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+
+                {# Marka başlığı #}
+                <div class="text-center mb-4">
+                    <a href="{% url 'accounts:home' %}" class="text-decoration-none">
+                        <h1 class="auth-title">
+                            <span class="brand-agora">Agora</span><span class="brand-ai">AI</span>
+                        </h1>
+                    </a>
+                    <p class="auth-subtitle">
+                        <i class="fas fa-landmark me-1"></i>
+                        Felsefeyle diyaloğa başlamak için hesap oluşturun
+                    </p>
+                </div>
+
+                <div class="auth-card fade-in-up">
+                    <form method="post" action="{% url 'accounts:register' %}" novalidate>
+                        {% csrf_token %}
+
+                        {# E-posta #}
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.email.id_for_label }}">
+                                <i class="fas fa-envelope me-1 text-gold"></i>
+                                {{ form.email.label }}
+                            </label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.email.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        {# Kullanıcı adı #}
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.username.id_for_label }}">
+                                <i class="fas fa-user me-1 text-gold"></i>
+                                {{ form.username.label }}
+                            </label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.username.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        {# Şifre #}
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.password1.id_for_label }}">
+                                <i class="fas fa-lock me-1 text-gold"></i>
+                                {{ form.password1.label }}
+                            </label>
+                            {{ form.password1 }}
+                            {% if form.password1.help_text %}
+                            <div class="form-text">{{ form.password1.help_text }}</div>
+                            {% endif %}
+                            {% if form.password1.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.password1.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        {# Şifre tekrarı #}
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.password2.id_for_label }}">
+                                <i class="fas fa-lock me-1 text-gold"></i>
+                                {{ form.password2.label }}
+                            </label>
+                            {{ form.password2 }}
+                            {% if form.password2.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.password2.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="divider-text my-4">Tercihler (sonradan değiştirilebilir)</div>
+
+                        <div class="row">
+                            {# Dil tercihi #}
+                            <div class="col-sm-6 form-group">
+                                <label class="form-label" for="{{ form.preferred_language.id_for_label }}">
+                                    <i class="fas fa-language me-1 text-gold"></i>
+                                    {{ form.preferred_language.label }}
+                                </label>
+                                {{ form.preferred_language }}
+                            </div>
+
+                            {# Zeitgeist modu #}
+                            <div class="col-sm-6 form-group">
+                                <label class="form-label" for="{{ form.zeitgeist_mode.id_for_label }}">
+                                    <i class="fas fa-hourglass-half me-1 text-gold"></i>
+                                    {{ form.zeitgeist_mode.label }}
+                                </label>
+                                {{ form.zeitgeist_mode }}
+                            </div>
+                        </div>
+
+                        {# Zeitgeist açıklama notu #}
+                        <div class="zeitgeist-info mb-4">
+                            <i class="fas fa-circle-info me-1"></i>
+                            <strong>Klasik mod:</strong> Filozoflar yalnızca kendi dönemlerinin bilgisiyle yanıt verir.
+                            <strong>Modern mod:</strong> Çağdaş örnekler ve yorumlar ekleyebilirler.
+                        </div>
+
+                        {# Form genel hataları #}
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger agora-alert mb-3">
+                            {% for error in form.non_field_errors %}
+                            <p class="mb-0">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <button type="submit" class="btn btn-agora-gold w-100 py-3">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Agora'ya Katıl
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <p class="text-agora-muted" style="font-size: 0.9rem;">
+                            Zaten hesabınız var mı?
+                            <a href="{% url 'accounts:login' %}" class="text-gold fw-semibold">
+                                Giriş yapın
+                            </a>
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

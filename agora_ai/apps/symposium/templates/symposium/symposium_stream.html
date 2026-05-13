@@ -1,0 +1,287 @@
+{# PATH: apps/symposium/templates/symposium/symposium_stream.html #}
+{# Agora AI — Sempozyum Canlı İzleme (SSE) #}
+{# Doküman Bölüm 5.4: run_symposium_streaming → SSE → EventSource #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sempozyum — {{ session.topic|truncatechars:40 }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .symp-hero {
+        background: linear-gradient(160deg, var(--agora-dark-2) 0%, var(--agora-dark-1) 100%);
+        border-bottom: 1px solid var(--agora-border-light);
+        padding: 2rem 0;
+    }
+    .symp-topic {
+        font-family: var(--font-serif); font-size: 1.4rem; color: var(--agora-parchment);
+        font-style: italic;
+    }
+    /* Katılımcı rozetleri */
+    .participants { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .participant-pill {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.3rem 0.85rem; border-radius: 50px;
+        border: 1px solid var(--agora-border);
+        background: var(--agora-dark-3);
+        font-size: 0.82rem; color: var(--agora-muted-light);
+        transition: all 0.25s ease;
+    }
+    .participant-pill.speaking {
+        border-color: var(--agora-gold);
+        background: rgba(201,168,76,0.1);
+        color: var(--agora-gold);
+    }
+    .participant-pill .dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--agora-border); flex-shrink: 0;
+    }
+    .participant-pill.speaking .dot {
+        background: var(--agora-gold);
+        animation: pulseGold 1s infinite;
+    }
+    @keyframes pulseGold { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+    /* Tur Başlık */
+    .turn-header {
+        display: flex; align-items: center; gap: 0.9rem;
+        padding: 1rem 1.3rem;
+        background: var(--agora-dark-3);
+        border: 1px solid var(--agora-border);
+        border-radius: 12px 12px 0 0;
+        border-bottom: none;
+        margin-top: 1.8rem;
+    }
+    .turn-avatar {
+        width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+        background: linear-gradient(135deg, var(--agora-gold-dark), var(--agora-dark-4));
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--font-serif); font-size: 1.1rem; color: var(--agora-gold-light);
+    }
+    .turn-philosopher { font-family: var(--font-serif); font-size: 1rem; color: var(--agora-parchment); }
+    .turn-badge {
+        margin-left: auto; font-size: 0.72rem;
+        padding: 0.2rem 0.6rem; border-radius: 50px;
+        border: 1px solid var(--agora-border); color: var(--agora-muted);
+    }
+    /* Konuşma baloncuğu */
+    .turn-bubble {
+        background: var(--agora-card-bg);
+        border: 1px solid var(--agora-border);
+        border-radius: 0 0 12px 12px;
+        padding: 1.2rem 1.4rem;
+        font-family: var(--font-body); font-size: 0.92rem;
+        line-height: 1.8; color: var(--agora-text);
+        min-height: 3rem;
+    }
+    .streaming-cursor::after {
+        content: '▌'; color: var(--agora-gold);
+        animation: blink 0.8s step-end infinite;
+    }
+    @keyframes blink { 50%{ opacity:0; } }
+    /* İlerleme */
+    .progress-bar-agora {
+        height: 3px; background: var(--agora-border);
+        border-radius: 2px; overflow: hidden; margin-bottom: 1.5rem;
+    }
+    .progress-bar-agora .fill {
+        height: 100%; background: var(--agora-gold);
+        transition: width 0.5s ease; width: 0%;
+    }
+    /* Status banner */
+    #statusBanner {
+        padding: 0.6rem 1rem; border-radius: 8px;
+        font-size: 0.85rem; text-align: center;
+        background: rgba(201,168,76,0.08);
+        border: 1px solid var(--agora-border);
+        color: var(--agora-muted-light);
+        margin-bottom: 1.5rem;
+    }
+    #statusBanner.done {
+        background: rgba(109,214,138,0.1); border-color: rgba(109,214,138,0.3);
+        color: #6dd68a;
+    }
+    #statusBanner.error {
+        background: rgba(220,53,69,0.1); border-color: rgba(220,53,69,0.3);
+        color: #f87171;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="symp-hero">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb" style="font-size:0.82rem;">
+                <li class="breadcrumb-item"><a href="{% url 'symposium:list' %}" class="text-gold">Sempozyumlar</a></li>
+                <li class="breadcrumb-item active text-agora-muted">Canlı</li>
+            </ol>
+        </nav>
+        <p class="text-uppercase fw-semibold mb-2" style="color:var(--agora-gold); font-size:0.78rem; letter-spacing:0.12em;">
+            <i class="fas fa-circle fa-xs me-1" style="animation:pulseGold 1s infinite;"></i>Sempozyum
+        </p>
+        <div class="symp-topic mb-3">"{{ session.topic }}"</div>
+        <div class="participants" id="participants">
+            {% for philosopher in philosophers %}
+            <div class="participant-pill" id="pill-{{ philosopher.pk }}" data-name="{{ philosopher.name|escapejs }}">
+                <div class="dot"></div>
+                {{ philosopher.name }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="container py-4">
+    {# İlerleme çubuğu #}
+    <div class="progress-bar-agora">
+        <div class="fill" id="progressFill"></div>
+    </div>
+
+    {# Durum banner #}
+    <div id="statusBanner">
+        <i class="fas fa-spinner fa-spin me-1"></i> Sempozyum başlatılıyor...
+    </div>
+
+    {# Turlar burada dinamik oluşturulur #}
+    <div id="turnsContainer"></div>
+
+    {# Tamamlandı: Detay linki #}
+    <div id="completedActions" style="display:none;" class="text-center mt-5">
+        <a href="{% url 'symposium:detail' session.pk %}" class="btn btn-agora-gold btn-lg me-3">
+            <i class="fas fa-book-open me-2"></i>Tam Metni Oku
+        </a>
+        <a href="{% url 'symposium:create' %}" class="btn btn-agora-ghost btn-lg">
+            <i class="fas fa-plus me-2"></i>Yeni Sempozyum
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    const SSE_URL      = "{% url 'symposium:sse' session.pk %}";
+    const TOTAL_TURNS  = {{ session.rounds_count }} * {{ philosophers|length }};
+
+    const turnsContainer  = document.getElementById('turnsContainer');
+    const statusBanner    = document.getElementById('statusBanner');
+    const progressFill    = document.getElementById('progressFill');
+    const completedDiv    = document.getElementById('completedActions');
+
+    let completedTurns = 0;
+    let currentBubble  = null;
+    let currentPill    = null;
+
+    function updateProgress() {
+        const pct = TOTAL_TURNS > 0
+            ? Math.round((completedTurns / TOTAL_TURNS) * 100)
+            : 0;
+        progressFill.style.width = pct + '%';
+    }
+
+    function setPillSpeaking(philosopherName) {
+        document.querySelectorAll('.participant-pill').forEach(p => p.classList.remove('speaking'));
+        const pill = [...document.querySelectorAll('.participant-pill')]
+            .find(p => p.dataset.name === philosopherName);
+        if (pill) { pill.classList.add('speaking'); currentPill = pill; }
+    }
+
+    function clearSpeaking() {
+        document.querySelectorAll('.participant-pill').forEach(p => p.classList.remove('speaking'));
+    }
+
+    function createTurnBlock(philosopherName, turnNum) {
+        const initial = philosopherName.charAt(0);
+
+        const header = document.createElement('div');
+        header.className = 'turn-header';
+        header.innerHTML = `
+            <div class="turn-avatar">${initial}</div>
+            <div>
+                <div class="turn-philosopher">${philosopherName}</div>
+                <div style="font-size:0.72rem; color:var(--agora-muted);">Tur ${turnNum}</div>
+            </div>
+            <span class="turn-badge">Tur ${turnNum}</span>`;
+
+        const bubble = document.createElement('div');
+        bubble.className = 'turn-bubble streaming-cursor';
+
+        turnsContainer.appendChild(header);
+        turnsContainer.appendChild(bubble);
+        return bubble;
+    }
+
+    /* ── SSE Bağlantısı ─────────────────────────────────────────── */
+    const source = new EventSource(SSE_URL);
+
+    source.onmessage = function (event) {
+        if (event.data === '[DONE]') {
+            source.close();
+            return;
+        }
+
+        let data;
+        try { data = JSON.parse(event.data); }
+        catch (_) { return; }
+
+        switch (data.type) {
+
+            case 'turn_start':
+                setPillSpeaking(data.philosopher);
+                statusBanner.innerHTML = `<i class="fas fa-microphone me-1"></i> ${data.philosopher} konuşuyor... (Tur ${data.turn})`;
+                currentBubble = createTurnBlock(data.philosopher, data.turn);
+                turnsContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                break;
+
+            case 'token':
+                if (currentBubble) {
+                    const existing = currentBubble.innerHTML
+                        .replace(/<br>/g, '\n')
+                        .replace(/<[^>]+>/g, '');
+                    const newText = existing + data.token;
+                    currentBubble.innerHTML = newText.replace(/\n/g, '<br>');
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }
+                break;
+
+            case 'turn_end':
+                if (currentBubble) currentBubble.classList.remove('streaming-cursor');
+                completedTurns++;
+                updateProgress();
+                clearSpeaking();
+                break;
+
+            case 'symposium_end':
+                statusBanner.className = 'done';
+                statusBanner.innerHTML = '<i class="fas fa-circle-check me-1"></i> Sempozyum tamamlandı!';
+                completedDiv.style.display = 'block';
+                progressFill.style.width = '100%';
+                break;
+
+            case 'already_completed':
+                statusBanner.className = 'done';
+                statusBanner.innerHTML = '<i class="fas fa-circle-check me-1"></i> Bu sempozyum zaten tamamlandı.';
+                completedDiv.style.display = 'block';
+                break;
+
+            case 'error':
+                statusBanner.className = 'error';
+                statusBanner.innerHTML = `<i class="fas fa-circle-xmark me-1"></i> Hata: ${data.message}`;
+                source.close();
+                break;
+        }
+    };
+
+    source.onerror = function () {
+        source.close();
+        if (!statusBanner.classList.contains('done')) {
+            statusBanner.className = 'error';
+            statusBanner.innerHTML = '<i class="fas fa-circle-xmark me-1"></i> Bağlantı kesildi.';
+        }
+    };
+
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,26 @@
+{# PATH: templates/partials/philosopher_avatar.html #}
+{# Kullanım: {% include "partials/philosopher_avatar.html" with philosopher=philosopher size=40 %} #}
+
+{% if philosopher.avatar_image %}
+    <img src="{{ philosopher.avatar_image.url }}"
+         alt="{{ philosopher.name }}"
+         style="width:{{ size|default:40 }}px;
+                height:{{ size|default:40 }}px;
+                border-radius:50%;
+                object-fit:cover;
+                border:2px solid var(--agora-gold-dark);
+                flex-shrink:0;">
+{% else %}
+    <div style="width:{{ size|default:40 }}px;
+                height:{{ size|default:40 }}px;
+                border-radius:50%;
+                background:linear-gradient(135deg,var(--agora-gold-dark),var(--agora-dark-4));
+                display:flex;align-items:center;justify-content:center;
+                font-family:var(--font-serif);
+                font-size:{{ size|default:40|divisibleby:2|yesno:'1.1,0.9' }}rem;
+                color:var(--agora-gold-light);
+                border:2px solid var(--agora-gold-dark);
+                flex-shrink:0;">
+        {{ philosopher.name|first }}
+    </div>
+{% endif %}

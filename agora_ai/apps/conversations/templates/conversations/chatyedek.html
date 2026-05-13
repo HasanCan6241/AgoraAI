@@ -1,0 +1,486 @@
+{# PATH: apps/conversations/templates/conversations/chat.html #}
+{# Agora AI — Sohbet Arayüzü (SSE Streaming) #}
+{# Doküman Bölüm 5.3: SSE — EventSource API ile token token render #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ philosopher.name }} — Sohbet{% endblock %}
+
+{% block extra_css %}
+<style>
+    body.agora-body { overflow: hidden; }
+    .chat-layout {
+        display: flex; flex-direction: column;
+        height: calc(100vh - 62px); /* navbar yüksekliği */
+    }
+    /* ── Sohbet Başlık Çubuğu ─── */
+    .chat-topbar {
+        background: var(--agora-dark-2);
+        border-bottom: 1px solid var(--agora-border);
+        padding: 0.75rem 1.2rem;
+        display: flex; align-items: center; gap: 0.9rem;
+        flex-shrink: 0;
+    }
+    .chat-avatar {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--agora-gold-dark), var(--agora-dark-4));
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--font-serif); font-size: 1.1rem; color: var(--agora-gold-light);
+    }
+    .chat-philosopher-name { font-family: var(--font-serif); font-size: 1rem; color: var(--agora-parchment); }
+    .chat-meta { font-size: 0.75rem; color: var(--agora-muted); }
+    .zeitgeist-pill {
+        font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 50px;
+        border: 1px solid var(--agora-border); color: var(--agora-muted);
+        margin-left: auto;
+    }
+    /* ── Mesaj Alanı ─── */
+    .chat-messages {
+        flex: 1; overflow-y: auto;
+        padding: 1.5rem;
+        display: flex; flex-direction: column; gap: 1.2rem;
+        background: var(--agora-dark-1);
+    }
+    /* ── Mesaj Baloncukları ─── */
+    .message-row {
+        display: flex; gap: 0.75rem;
+        animation: fadeInUp 0.3s ease both;
+    }
+    .message-row.user  { flex-direction: row-reverse; }
+    .message-bubble {
+        max-width: 72%;
+        padding: 0.9rem 1.2rem;
+        border-radius: 14px;
+        line-height: 1.7;
+        font-size: 0.92rem;
+        position: relative;
+    }
+    .user .message-bubble {
+        background: var(--agora-user-bubble);
+        border: 1px solid rgba(201,168,76,0.2);
+        color: var(--agora-parchment);
+        border-bottom-right-radius: 4px;
+    }
+    .assistant .message-bubble {
+        background: var(--agora-ai-bubble);
+        border: 1px solid var(--agora-border);
+        color: var(--agora-text);
+        border-bottom-left-radius: 4px;
+        font-family: var(--font-body);
+    }
+    .message-avatar {
+        width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.85rem; font-family: var(--font-serif);
+    }
+    .user .message-avatar { background: rgba(201,168,76,0.2); color: var(--agora-gold); }
+    .assistant .message-avatar { background: var(--agora-dark-3); color: var(--agora-gold); border: 1px solid var(--agora-border); }
+    .message-time { font-size: 0.68rem; color: var(--agora-muted); margin-top: 0.3rem; text-align: right; }
+    .user .message-time { text-align: right; }
+    .assistant .message-time { text-align: left; }
+    /* ── Yazıyor göstergesi ─── */
+    .typing-indicator {
+        display: flex; align-items: center; gap: 0.4rem;
+        padding: 0.75rem 1rem;
+        background: var(--agora-dark-3);
+        border: 1px solid var(--agora-border);
+        border-radius: 12px; border-bottom-left-radius: 4px;
+        max-width: 80px;
+    }
+    .typing-dot {
+        width: 7px; height: 7px; border-radius: 50%;
+        background: var(--agora-gold); opacity: 0.4;
+        animation: typingPulse 1.2s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingPulse { 0%,60%,100%{opacity:0.4; transform:scale(1);} 30%{opacity:1; transform:scale(1.2);} }
+    /* Akış imleci */
+    .streaming-cursor::after {
+        content: '▌'; color: var(--agora-gold); animation: blink 0.8s step-end infinite;
+    }
+    @keyframes blink { 50%{ opacity:0; } }
+    /* ── Giriş Çubuğu ─── */
+    .chat-input-bar {
+        border-top: 1px solid var(--agora-border);
+        background: var(--agora-dark-2);
+        padding: 1rem 1.2rem;
+        flex-shrink: 0;
+    }
+    .chat-input-wrapper {
+        display: flex; gap: 0.7rem; align-items: flex-end;
+        max-width: 900px; margin: 0 auto;
+    }
+    #messageInput {
+        flex: 1; min-height: 44px; max-height: 140px;
+        resize: none; overflow-y: auto;
+        background: var(--agora-dark-3);
+        border: 1px solid var(--agora-border);
+        border-radius: 10px;
+        color: var(--agora-text);
+        padding: 0.65rem 1rem;
+        font-family: var(--font-body); font-size: 0.92rem;
+        line-height: 1.5;
+        transition: border-color 0.2s ease;
+    }
+    #messageInput:focus { border-color: var(--agora-gold); outline: none; box-shadow: 0 0 0 3px rgba(201,168,76,0.12); }
+    #messageInput::placeholder { color: var(--agora-muted); }
+    #sendBtn {
+        width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+        background: linear-gradient(135deg, var(--agora-gold-dark), var(--agora-gold));
+        border: none; color: var(--agora-dark-1);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.2s ease;
+    }
+    #sendBtn:hover:not(:disabled) { box-shadow: 0 3px 14px rgba(201,168,76,0.4); transform: scale(1.05); }
+    #sendBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .input-hint { text-align: center; font-size: 0.72rem; color: var(--agora-muted); margin-top: 0.4rem; }
+    /* Markdown-benzeri prose */
+    .prose p   { margin-bottom: 0.75rem; }
+    .prose p:last-child { margin-bottom: 0; }
+    .prose em  { color: var(--agora-gold-light); font-style: italic; }
+    .prose strong { color: var(--agora-parchment); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-layout">
+
+    {# ── Topbar ─────────────────────────────────────────────────────── #}
+    <div class="chat-topbar">
+        <a href="{% url 'philosophers:detail' philosopher.slug %}"
+           style="color:inherit; text-decoration:none;">
+            {% if philosopher.avatar_image %}
+            <img src="{{ philosopher.avatar_image.url }}"
+                 alt="{{ philosopher.name }}"
+                 style="width:40px;height:40px;border-radius:50%;object-fit:cover;
+                        border:2px solid var(--agora-gold-dark);flex-shrink:0;">
+            {% else %}
+            <div class="chat-avatar">{{ philosopher.name|first }}</div>
+            {% endif %}
+        </a>
+        <div>
+            <div class="chat-philosopher-name">{{ philosopher.name }}</div>
+            <div class="chat-meta">
+                {{ philosopher.era }}
+                · <a href="{% url 'conversations:list' %}"
+                     class="text-agora-muted" style="font-size:0.72rem;">← Tüm sohbetler</a>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            {% if session.mode and session.mode != "normal" %}
+            <div style="
+                font-size:0.72rem; padding:0.25rem 0.75rem; border-radius:50px;
+                border:1px solid rgba(201,168,76,0.5);
+                background:rgba(201,168,76,0.12);
+                color:var(--agora-gold); font-weight:600;">
+                {% with phil_mode=session.philosopher.special_modes.all %}
+                {% for m in phil_mode %}
+                    {% if m.mode_key == session.mode %}{{ m.button_label }}{% endif %}
+                {% endfor %}
+                {% endwith %}
+                {% if not session.philosopher.special_modes.exists %}
+                    🔍 Özel Mod
+                {% endif %}
+            </div>
+            {% endif %}
+            <div class="zeitgeist-pill">
+                {% if session.zeitgeist_mode == "classical" %}🏛️ Klasik{% else %}⚡ Modern{% endif %}
+                · {{ zeitgeist_display }}
+            </div>
+        </div>
+        {# Sil butonu #}
+        <button id="deleteBtn" class="btn btn-agora-ghost btn-sm ms-2"
+                style="font-size:0.75rem;" title="Sohbeti sil">
+            <i class="fas fa-trash-can"></i>
+        </button>
+    </div>
+
+    {# ── Mesaj Alanı ────────────────────────────────────────────────── #}
+    <div class="chat-messages" id="chatMessages">
+
+        {# Karşılama mesajı (yeni sohbet) #}
+        {% if not messages %}
+        <div class="text-center py-5" style="color:var(--agora-muted);">
+            <div style="font-size:3rem; font-family:var(--font-serif); color:rgba(201,168,76,0.15);">
+                {{ philosopher.name|first }}
+            </div>
+            <p class="mt-3" style="font-family:var(--font-body); font-size:0.9rem;">
+                <strong style="color:var(--agora-parchment);">{{ philosopher.name }}</strong>
+                seni bekliyor.<br>
+                <span style="font-size:0.82rem;">İlk soruyu sor, diyalog başlasın.</span>
+            </p>
+        </div>
+        {% endif %}
+
+        {# Geçmiş mesajlar #}
+        {% for message in messages %}
+        <div class="message-row {{ message.role }}">
+            <div class="message-avatar">
+                {% if message.role == "user" %}
+                    <i class="fas fa-user fa-xs"></i>
+                {% elif philosopher.avatar_image %}
+                    <img src="{{ philosopher.avatar_image.url }}"
+                         alt="{{ philosopher.name }}"
+                         style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+                {% else %}
+                    {{ philosopher.name|first }}
+                {% endif %}
+            </div>
+            <div>
+                <div class="message-bubble prose">{{ message.content|linebreaksbr }}</div>
+                <div class="message-time">{{ message.created_at|date:"H:i" }}</div>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+
+    {# ── Giriş Çubuğu ────────────────────────────────────────────────── #}
+    <div class="chat-input-bar">
+        <div class="chat-input-wrapper">
+            <textarea
+                id="messageInput"
+                placeholder="{{ philosopher.name }}'e bir soru sor..."
+                rows="1"
+                maxlength="4000"
+                autocomplete="off"
+            ></textarea>
+            <button id="sendBtn" type="button" aria-label="Gönder">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+        <p class="input-hint">
+            Enter → gönder · Shift+Enter → yeni satır ·
+            <span id="charCount" style="color:var(--agora-gold);">0</span>/4000
+        </p>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    /* ── Sabitler ──────────────────────────────────────────────────── */
+    const SESSION_ID   = {{ session.pk }};
+    const SEND_URL     = "{% url 'conversations:send' session.pk %}";
+    const DELETE_URL   = "{% url 'conversations:delete' session.pk %}";
+    const CSRF_TOKEN   = "{{ csrf_token }}";
+    const PHIL_NAME    = "{{ philosopher.name|escapejs }}";
+    const PHIL_INITIAL = "{{ philosopher.name|first|escapejs }}";
+    const PHIL_AVATAR_URL = "{{ philosopher.avatar_image.url|default:''|escapejs }}";
+
+    /* ── DOM Referansları ──────────────────────────────────────────── */
+    const messagesBox = document.getElementById('chatMessages');
+    const input       = document.getElementById('messageInput');
+    const sendBtn     = document.getElementById('sendBtn');
+    const charCount   = document.getElementById('charCount');
+    const deleteBtn   = document.getElementById('deleteBtn');
+
+    let isStreaming = false;
+    let currentSource = null;  // Aktif EventSource
+
+    /* ── Yardımcı: Kutuyu Aşağı Kaydır ──────────────────────────── */
+    function scrollBottom(smooth = true) {
+        messagesBox.scrollTo({
+            top: messagesBox.scrollHeight,
+            behavior: smooth ? 'smooth' : 'instant',
+        });
+    }
+
+    /* ── Karakter Sayacı ──────────────────────────────────────────── */
+    input.addEventListener('input', () => {
+        const len = input.value.length;
+        charCount.textContent = len;
+        charCount.style.color = len > 3500 ? '#dc3545' : 'var(--agora-gold)';
+        // Textarea'yı içeriğe göre boyutlandır
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+    });
+
+    /* ── Enter → Gönder, Shift+Enter → Yeni Satır ─────────────────── */
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (!isStreaming) sendMessage();
+        }
+    });
+
+    sendBtn.addEventListener('click', () => {
+        if (!isStreaming) sendMessage();
+    });
+
+    /* ── Mesaj Baloncuğu Oluştur ──────────────────────────────────── */
+    function createMessageRow(role, content, time) {
+        const row = document.createElement('div');
+        row.className = `message-row ${role}`;
+
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        if(role === 'user'){
+            avatar.innerHTML = '<i class="fas fa-user fa-xs"></i>';
+        } else if(PHIL_AVATAR_URL){
+            avatar.style.cssText = 'width:34px;height:34px;border-radius:50%;overflow:hidden;flex-shrink:0;';
+            avatar.innerHTML = `<img src="${PHIL_AVATAR_URL}" style="width:100%;height:100%;object-fit:cover;" alt="">`;
+        } else {
+            avatar.textContent = PHIL_INITIAL;
+        }
+
+        const wrapper = document.createElement('div');
+
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble prose';
+        if (content) bubble.innerHTML = content.replace(/\n/g, '<br>');
+
+        const timeEl = document.createElement('div');
+        timeEl.className = 'message-time';
+        timeEl.textContent = time || new Date().toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
+
+        wrapper.appendChild(bubble);
+        wrapper.appendChild(timeEl);
+        row.appendChild(avatar);
+        row.appendChild(wrapper);
+
+        return { row, bubble };
+    }
+
+    /* ── Yazıyor Göstergesi ────────────────────────────────────────── */
+    function createTypingIndicator() {
+        const row = document.createElement('div');
+        row.className = 'message-row assistant';
+        row.id = 'typingRow';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.textContent = PHIL_INITIAL;
+
+        const indicator = document.createElement('div');
+        indicator.className = 'typing-indicator';
+        indicator.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+
+        row.appendChild(avatar);
+        row.appendChild(indicator);
+        return row;
+    }
+
+    /* ── Ana Gönderim Fonksiyonu ──────────────────────────────────── */
+    async function sendMessage() {
+        const text = input.value.trim();
+        if (!text || isStreaming) return;
+
+        /* 1. Kullanıcı mesajını anında göster */
+        const { row: userRow } = createMessageRow('user', text.replace(/\n/g, '<br>'));
+        messagesBox.appendChild(userRow);
+        scrollBottom();
+
+        /* 2. Input'u temizle */
+        input.value = '';
+        input.style.height = 'auto';
+        charCount.textContent = '0';
+        isStreaming = true;
+        sendBtn.disabled = true;
+
+        /* 3. Karşılama mesajını kaldır (varsa) */
+        const welcome = messagesBox.querySelector('.text-center.py-5');
+        if (welcome) welcome.remove();
+
+        /* 4. Yazıyor göstergesi */
+        const typingRow = createTypingIndicator();
+        messagesBox.appendChild(typingRow);
+        scrollBottom();
+
+        try {
+            /* 5. Mesajı sunucuya gönder */
+            const sendResp = await fetch(SEND_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN,
+                },
+                body: JSON.stringify({ message: text }),
+            });
+
+            if (!sendResp.ok) {
+                const err = await sendResp.json();
+                throw new Error(err.error || 'Sunucu hatası.');
+            }
+
+            const { stream_url } = await sendResp.json();
+
+            /* 6. Yazıyor göstergesini kaldır, asistan baloncuğu oluştur */
+            typingRow.remove();
+            const { row: aiRow, bubble: aiBubble } = createMessageRow('assistant', '');
+            aiBubble.classList.add('streaming-cursor');
+            messagesBox.appendChild(aiRow);
+            scrollBottom();
+
+            /* 7. SSE stream aç (Doküman Bölüm 5.3) */
+            currentSource = new EventSource(stream_url);
+            let accumulated = '';
+
+            currentSource.onmessage = (event) => {
+                if (event.data === '[DONE]') {
+                    /* Stream tamamlandı */
+                    currentSource.close();
+                    aiBubble.classList.remove('streaming-cursor');
+                    isStreaming = false;
+                    sendBtn.disabled = false;
+                    input.focus();
+                    scrollBottom();
+                    return;
+                }
+                try {
+                    const token = JSON.parse(event.data);
+                    accumulated += token;
+                    /* Satır sonlarını <br> yap */
+                    aiBubble.innerHTML = accumulated.replace(/\n/g, '<br>');
+                    scrollBottom(false);
+                } catch (_) { /* parse hatası — token atla */ }
+            };
+
+            currentSource.onerror = () => {
+                currentSource.close();
+                aiBubble.classList.remove('streaming-cursor');
+                if (!accumulated) {
+                    aiBubble.innerHTML = '<span style="color:#dc3545;">⚠️ Bağlantı hatası. Lütfen tekrar deneyin.</span>';
+                }
+                isStreaming = false;
+                sendBtn.disabled = false;
+            };
+
+        } catch (error) {
+            typingRow.remove();
+            /* Hata baloncuğu */
+            const { row: errRow, bubble: errBubble } = createMessageRow('assistant', '');
+            errBubble.innerHTML = `<span style="color:#dc3545;">⚠️ ${error.message}</span>`;
+            messagesBox.appendChild(errRow);
+            scrollBottom();
+            isStreaming = false;
+            sendBtn.disabled = false;
+        }
+    }
+
+    /* ── Sohbet Sil ───────────────────────────────────────────────── */
+    deleteBtn.addEventListener('click', async () => {
+        if (!confirm('Bu sohbeti silmek istediğinizden emin misiniz?')) return;
+        try {
+            await fetch(DELETE_URL, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN },
+            });
+            window.location.href = "{% url 'conversations:list' %}";
+        } catch (_) {
+            alert('Sohbet silinirken hata oluştu.');
+        }
+    });
+
+    /* ── İlk yükleme: en alta kaydır ─────────────────────────────── */
+    scrollBottom(false);
+    input.focus();
+
+})();
+</script>
+{% endblock %}

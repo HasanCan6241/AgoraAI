@@ -1,0 +1,346 @@
+{# PATH: apps/symposium/templates/symposium/symposium_list.html #}
+{% extends "base.html" %}
+{% block title %}Sempozyumlarım{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Page Header ────────────────────────────────────────────── */
+.symp-list-hero {
+    padding: 2.8rem 0 2rem;
+    border-bottom: 1px solid var(--agora-border-light);
+    background: linear-gradient(160deg, var(--agora-dark-2) 0%, var(--agora-dark-1) 100%);
+}
+.symp-list-hero .page-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--agora-gold);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+.symp-list-hero h1 {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    color: var(--agora-parchment);
+    font-weight: 400;
+    margin-bottom: 0;
+}
+
+/* ── Session Card ───────────────────────────────────────────── */
+.session-card {
+    background: var(--agora-card-bg);
+    border: 1px solid var(--agora-border);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.session-card:hover {
+    border-color: rgba(255,255,255,0.14);
+    transform: translateY(-2px);
+}
+
+.session-card-body {
+    padding: 1.4rem 1.4rem 1rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+/* ── Status Badge ───────────────────────────────────────────── */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+}
+.status-badge.active {
+    background: rgba(201,168,76,0.12);
+    color: var(--agora-gold);
+    border: 1px solid rgba(201,168,76,0.28);
+}
+.status-badge.completed {
+    background: rgba(109,214,138,0.1);
+    color: #6dd68a;
+    border: 1px solid rgba(109,214,138,0.25);
+}
+.status-badge.failed {
+    background: rgba(248,113,113,0.1);
+    color: #f87171;
+    border: 1px solid rgba(248,113,113,0.25);
+}
+.status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+}
+.status-badge.active .status-dot { animation: pulse-dot 1.8s infinite; }
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* ── Topic ──────────────────────────────────────────────────── */
+.session-topic {
+    font-family: var(--font-serif);
+    font-size: 0.97rem;
+    color: var(--agora-parchment);
+    font-style: italic;
+    line-height: 1.55;
+}
+
+/* ── Philosopher Pills ──────────────────────────────────────── */
+.phil-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+.phil-tag {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--agora-border);
+    color: var(--agora-muted-light);
+    background: var(--agora-dark-3);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.phil-tag-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--agora-gold-dark);
+    opacity: 0.6;
+    flex-shrink: 0;
+}
+
+/* ── Meta Row ───────────────────────────────────────────────── */
+.session-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    font-size: 0.74rem;
+    color: var(--agora-muted);
+}
+.session-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+/* ── Card Footer ────────────────────────────────────────────── */
+.session-card-footer {
+    padding: 0.9rem 1.4rem;
+    border-top: 1px solid var(--agora-border-light);
+    background: rgba(0,0,0,0.15);
+}
+.btn-card-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0.55rem 1rem;
+    border-radius: 9px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid var(--agora-gold);
+    color: var(--agora-dark-1);
+    background: var(--agora-gold);
+    transition: opacity 0.15s ease;
+}
+.btn-card-primary:hover { opacity: 0.88; }
+.btn-card-ghost {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0.55rem 1rem;
+    border-radius: 9px;
+    font-size: 0.82rem;
+    text-decoration: none;
+    border: 1px solid var(--agora-border);
+    color: var(--agora-muted-light);
+    background: transparent;
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+.btn-card-ghost:hover {
+    border-color: rgba(255,255,255,0.18);
+    color: var(--agora-parchment);
+}
+
+/* ── Empty State ────────────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 5rem 2rem;
+    color: var(--agora-muted);
+}
+.empty-state-icon {
+    font-size: 3rem;
+    opacity: 0.15;
+    margin-bottom: 1.25rem;
+    display: block;
+}
+.empty-state h4 {
+    font-family: var(--font-serif);
+    font-size: 1.3rem;
+    color: var(--agora-muted-light);
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+}
+.empty-state p {
+    font-size: 0.87rem;
+    max-width: 340px;
+    margin: 0 auto 1.5rem;
+    line-height: 1.7;
+}
+
+/* ── Separator ──────────────────────────────────────────────── */
+.section-sep {
+    height: 1px;
+    background: var(--agora-border-light);
+    margin: 0.25rem 0 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="symp-list-hero">
+    <div class="container">
+        <p class="page-label"><i class="fas fa-masks-theater me-1"></i>Tartışmalarım</p>
+        <div class="d-flex align-items-center justify-content-between">
+            <h1>Sempozyumlarım</h1>
+            <a href="{% url 'symposium:create' %}" class="btn btn-agora-gold">
+                <i class="fas fa-plus me-1"></i>Yeni Sempozyum
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+
+    {% if sessions %}
+
+    {# ── Aktif oturumlar ── #}
+    {% if active_sessions %}
+    <p class="text-uppercase fw-semibold mb-3"
+       style="font-size:0.7rem;letter-spacing:0.13em;color:var(--agora-muted);">
+        Devam Eden
+    </p>
+    <div class="row g-4 mb-4">
+        {% for session in active_sessions %} {# Burada doğrudan active_sessions içinde dönüyoruz #}
+        <div class="col-md-6 col-lg-4">
+            {% include "symposium/_session_card.html" %}
+        </div>
+        {% endfor %}
+    </div>
+    <div class="section-sep"></div>
+    {% endif %}
+
+    {# ── Tüm oturumlar ── #}
+    <p class="text-uppercase fw-semibold mb-3"
+       style="font-size:0.7rem;letter-spacing:0.13em;color:var(--agora-muted);">
+        Tüm Sempozyumlar
+    </p>
+    <div class="row g-4">
+        {% for session in sessions %}
+        <div class="col-md-6 col-lg-4">
+            {% include "symposium/_session_card.html" %}
+        </div>
+        {% endfor %}
+    </div>
+    <div class="row g-4">
+        {% for session in sessions %}
+        <div class="col-md-6 col-lg-4">
+            <div class="session-card">
+                <div class="session-card-body">
+
+                    {# — Durum — #}
+                    <div>
+                        {% if session.status == "active" %}
+                        <span class="status-badge active">
+                            <span class="status-dot"></span> Aktif
+                        </span>
+                        {% elif session.status == "completed" %}
+                        <span class="status-badge completed">
+                            <span class="status-dot"></span> Tamamlandı
+                        </span>
+                        {% else %}
+                        <span class="status-badge failed">
+                            <span class="status-dot"></span> Başarısız
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {# — Konu — #}
+                    <p class="session-topic mb-0">
+                        "{{ session.topic|truncatechars:90 }}"
+                    </p>
+
+                    {# — Filozoflar — #}
+                    <div class="phil-tags">
+                        {% for p in session.philosophers.all %}
+                        <span class="phil-tag">
+                            <span class="phil-tag-dot"></span>
+                            {{ p.name }}
+                        </span>
+                        {% endfor %}
+                    </div>
+
+                    {# — Meta — #}
+                    <div class="session-meta">
+                        <span>
+                            <i class="fas fa-comments fa-xs"></i>
+                            {{ session.turn_count }} konuşma
+                        </span>
+                        <span>
+                            <i class="fas fa-calendar fa-xs"></i>
+                            {{ session.created_at|date:"d M Y" }}
+                        </span>
+                    </div>
+
+                </div>
+
+                {# — Footer Buton — #}
+                <div class="session-card-footer">
+                    {% if session.status == "active" %}
+                    <a href="{% url 'symposium:chat' session.pk %}" class="btn-card-primary">
+                        <i class="fas fa-play fa-xs"></i>Devam Et
+                    </a>
+                    {% else %}
+                    <a href="{% url 'symposium:detail' session.pk %}" class="btn-card-ghost">
+                        <i class="fas fa-book-open fa-xs"></i>Oku
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    {# ── Boş Durum ── #}
+    <div class="empty-state">
+        <i class="fas fa-theater-masks empty-state-icon"></i>
+        <h4>Henüz sempozyum yok</h4>
+        <p>2–4 filozofu bir konuda tartıştır. İstediğin zaman araya gir, sohbeti yönlendir.</p>
+        <a href="{% url 'symposium:create' %}" class="btn btn-agora-gold">
+            <i class="fas fa-plus me-1"></i>İlk Sempozyumu Başlat
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

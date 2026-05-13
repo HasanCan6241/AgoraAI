@@ -1,0 +1,66 @@
+<div class="session-card">
+    <div class="session-card-body">
+
+        {# — Durum — #}
+        <div>
+            {% if session.status == "active" %}
+            <span class="status-badge active">
+                <span class="status-dot"></span> Aktif
+            </span>
+            {% elif session.status == "completed" %}
+            <span class="status-badge completed">
+                <span class="status-dot"></span> Tamamlandı
+            </span>
+            {% else %}
+            <span class="status-badge failed">
+                <span class="status-dot"></span> Başarısız
+            </span>
+            {% endif %}
+        </div>
+
+        {# — Konu — #}
+        <p class="session-topic mb-0">
+            "{{ session.topic|truncatechars:90 }}"
+        </p>
+
+        {# — Filozoflar — #}
+        <div class="phil-tags">
+            {% for p in session.philosophers.all %}
+            <span class="phil-tag" {% if p.avatar_url %}style="padding-left: 0.25rem;"{% endif %}>
+                {% if p.avatar_url %}
+                    <img src="{{ p.avatar_url }}" alt="{{ p.name }}" style="width: 25px; height: 25px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+                {% else %}
+                    <span class="phil-tag-dot"></span>
+                {% endif %}
+                {{ p.name }}
+            </span>
+            {% endfor %}
+        </div>
+
+        {# — Meta — #}
+        <div class="session-meta">
+            <span>
+                <i class="fas fa-comments fa-xs"></i>
+                {{ session.turn_count }} konuşma
+            </span>
+            <span>
+                <i class="fas fa-calendar fa-xs"></i>
+                {{ session.created_at|date:"d M Y" }}
+            </span>
+        </div>
+
+    </div>
+
+    {# — Footer Buton — #}
+    <div class="session-card-footer">
+        {% if session.status == "active" %}
+        <a href="{% url 'symposium:chat' session.pk %}" class="btn-card-primary">
+            <i class="fas fa-play fa-xs"></i>Devam Et
+        </a>
+        {% else %}
+        <a href="{% url 'symposium:detail' session.pk %}" class="btn-card-ghost">
+            <i class="fas fa-book-open fa-xs"></i>Oku
+        </a>
+        {% endif %}
+    </div>
+</div>

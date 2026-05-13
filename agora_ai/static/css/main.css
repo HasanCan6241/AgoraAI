@@ -1,0 +1,360 @@
+/* PATH: static/css/main.css */
+/* Agora AI — Ana Tema CSS */
+/* Doküman Bölüm 2.2: Custom CSS — Koyu tema, parşömen dokuları, animasyonlar */
+
+/* ── CSS Değişkenleri (Renk Paleti) ────────────────────────────────────── */
+:root {
+    /* Birincil renkler — Antik Yunan ilhamı */
+    --agora-gold:         #c9a84c;
+    --agora-gold-light:   #e2c47a;
+    --agora-gold-dark:    #9e7c2e;
+    --agora-parchment:    #f0e6cc;
+    --agora-parchment-dim:#d4c4a0;
+
+    /* Koyu tema arka planları */
+    --agora-dark-1:       #0f0e0c;
+    --agora-dark-2:       #161410;
+    --agora-dark-3:       #1e1b15;
+    --agora-dark-4:       #262218;
+
+    /* Kart ve yüzey renkleri */
+    --agora-card-bg:      #1a1710;
+    --agora-card-hover:   #211e14;
+
+    /* Kenar ve çizgiler */
+    --agora-border:       rgba(201, 168, 76, 0.15);
+    --agora-border-light: rgba(201, 168, 76, 0.08);
+
+    /* Metin renkleri */
+    --agora-text:         #e8dcc8;
+    --agora-muted:        #8a7e68;
+    --agora-muted-light:  #b0a48c;
+
+    /* Kullanıcı mesaj balonu */
+    --agora-user-bubble:  rgba(201, 168, 76, 0.12);
+    --agora-ai-bubble:    rgba(30, 27, 21, 0.8);
+
+    /* Animasyon süreleri */
+    --transition-fast:    0.15s ease;
+    --transition-normal:  0.25s ease;
+    --transition-slow:    0.4s ease;
+
+    /* Tipografi */
+    --font-serif:        'Playfair Display', Georgia, 'Times New Roman', serif;
+    --font-body:         'Lora', Georgia, serif;
+    --font-mono:         'Courier New', Courier, monospace;
+}
+
+/* ── Reset ve Temel Stiller ────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body.agora-body {
+    background-color: var(--agora-dark-1);
+    color: var(--agora-text);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Tipografi ─────────────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    color: var(--agora-parchment);
+    line-height: 1.25;
+}
+
+p {
+    color: var(--agora-text);
+}
+
+a {
+    color: var(--agora-gold);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:hover {
+    color: var(--agora-gold-light);
+}
+
+/* ── Navbar ─────────────────────────────────────────────────────────────── */
+.agora-navbar {
+    background-color: rgba(15, 14, 12, 0.95);
+    border-bottom: 1px solid var(--agora-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 0.75rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+}
+
+.agora-brand {
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--agora-parchment) !important;
+    letter-spacing: 0.02em;
+}
+
+.agora-brand-small {
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    color: var(--agora-parchment);
+}
+
+.brand-agora {
+    color: var(--agora-parchment);
+}
+
+.brand-ai {
+    color: var(--agora-gold);
+}
+
+.agora-navbar .nav-link {
+    color: var(--agora-muted-light) !important;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    padding: 0.5rem 0.9rem !important;
+    transition: color var(--transition-fast);
+}
+
+.agora-navbar .nav-link:hover,
+.agora-navbar .nav-link.active {
+    color: var(--agora-gold) !important;
+}
+
+/* ── Dropdown ────────────────────────────────────────────────────────────── */
+.agora-dropdown {
+    background-color: var(--agora-dark-3);
+    border: 1px solid var(--agora-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.agora-dropdown .dropdown-item {
+    color: var(--agora-muted-light);
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    transition: all var(--transition-fast);
+}
+
+.agora-dropdown .dropdown-item:hover {
+    background-color: var(--agora-card-hover);
+    color: var(--agora-gold);
+}
+
+.agora-dropdown .dropdown-divider {
+    border-color: var(--agora-border);
+}
+
+/* ── Butonlar ────────────────────────────────────────────────────────────── */
+.btn-agora-gold {
+    background: linear-gradient(135deg, var(--agora-gold-dark), var(--agora-gold));
+    border: none;
+    color: var(--agora-dark-1);
+    font-family: var(--font-body);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 0.6rem 1.5rem;
+    border-radius: 6px;
+    transition: all var(--transition-normal);
+}
+
+.btn-agora-gold:hover {
+    background: linear-gradient(135deg, var(--agora-gold), var(--agora-gold-light));
+    color: var(--agora-dark-1);
+    box-shadow: 0 4px 20px rgba(201, 168, 76, 0.35);
+    transform: translateY(-1px);
+}
+
+.btn-agora-ghost {
+    background: transparent;
+    border: 1px solid var(--agora-border);
+    color: var(--agora-muted-light);
+    font-family: var(--font-body);
+    padding: 0.5rem 1.2rem;
+    border-radius: 6px;
+    transition: all var(--transition-fast);
+}
+
+.btn-agora-ghost:hover {
+    border-color: var(--agora-gold);
+    color: var(--agora-gold);
+    background: var(--agora-border-light);
+}
+
+/* ── Form Alanları ───────────────────────────────────────────────────────── */
+.form-control,
+.form-select {
+    background-color: var(--agora-dark-3);
+    border: 1px solid var(--agora-border);
+    color: var(--agora-text);
+    font-family: var(--font-body);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--agora-dark-3);
+    border-color: var(--agora-gold);
+    color: var(--agora-text);
+    box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
+    outline: none;
+}
+
+.form-control::placeholder {
+    color: var(--agora-muted);
+}
+
+.form-label {
+    color: var(--agora-parchment-dim);
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+}
+
+.form-text {
+    color: var(--agora-muted) !important;
+    font-size: 0.8rem;
+}
+
+.invalid-feedback {
+    font-size: 0.82rem;
+}
+
+/* ── Kartlar ─────────────────────────────────────────────────────────────── */
+.agora-card {
+    background: var(--agora-card-bg);
+    border: 1px solid var(--agora-border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform var(--transition-normal), border-color var(--transition-normal);
+}
+
+.agora-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(201, 168, 76, 0.35);
+}
+
+/* ── Alert / Flash Mesajlar ──────────────────────────────────────────────── */
+.agora-alert {
+    background-color: var(--agora-dark-3);
+    border: 1px solid var(--agora-border);
+    border-radius: 8px;
+    color: var(--agora-text);
+    font-size: 0.9rem;
+}
+
+.agora-alert.alert-success {
+    border-color: rgba(25, 135, 84, 0.4);
+    background-color: rgba(25, 135, 84, 0.1);
+}
+
+.agora-alert.alert-danger,
+.agora-alert.alert-error {
+    border-color: rgba(220, 53, 69, 0.4);
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.agora-alert.alert-warning {
+    border-color: rgba(255, 193, 7, 0.4);
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+/* ── Ana İçerik Alanı ─────────────────────────────────────────────────────── */
+.agora-main {
+    flex: 1;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.agora-footer {
+    background-color: var(--agora-dark-2);
+    border-top: 1px solid var(--agora-border-light);
+    font-size: 0.9rem;
+}
+
+.footer-link {
+    color: var(--agora-muted) !important;
+    font-size: 0.88rem;
+    transition: color var(--transition-fast);
+    display: block;
+    padding: 0.15rem 0;
+}
+
+.footer-link:hover {
+    color: var(--agora-gold) !important;
+}
+
+/* ── Yardımcı Sınıflar ────────────────────────────────────────────────────── */
+.text-gold { color: var(--agora-gold) !important; }
+.text-parchment { color: var(--agora-parchment) !important; }
+.text-agora-muted { color: var(--agora-muted) !important; }
+
+.bg-agora-dark { background-color: var(--agora-dark-2) !important; }
+.bg-agora-card { background-color: var(--agora-card-bg) !important; }
+
+.border-agora { border-color: var(--agora-border) !important; }
+
+.font-serif { font-family: var(--font-serif) !important; }
+.font-body  { font-family: var(--font-body) !important; }
+
+.py-6 { padding-top: 4rem !important; padding-bottom: 4rem !important; }
+
+/* ── Sayfa Geçiş Animasyonu ──────────────────────────────────────────────── */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-up {
+    animation: fadeInUp 0.5s ease both;
+}
+
+/* ── Scrollbar Özelleştirme ──────────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--agora-dark-2);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--agora-gold-dark);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--agora-gold);
+}
+
+/* ── Responsive Düzeltmeler ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .agora-brand {
+        font-size: 1.2rem;
+    }
+
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.5rem; }
+}

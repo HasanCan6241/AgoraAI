@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="tr" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Agora AI — Geçmişin Bilgeleriyle Dijital Diyalog">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{% block title %}Agora AI{% endblock %} — Geçmişin Bilgeleriyle Diyalog</title>
+
+    {# Google Fonts — Doküman Bölüm 2.2: Playfair Display, Lora #}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+
+    {# Font Awesome 6 — Doküman Bölüm 2.2 #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W+A==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+    {# Bootstrap 5.3 CSS — Doküman Bölüm 2.2 #}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" xintegrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    {% load static %}
+    {# Agora AI ana tema CSS'i #}
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+
+    {# Sayfa özel CSS #}
+    {% block extra_css %}
+
+    {% endblock %}
+</head>
+
+<body class="agora-body">
+
+    {# ── Navigasyon Çubuğu ─────────────────────────────────────────────── #}
+    <nav class="navbar navbar-expand-lg agora-navbar" id="mainNav">
+        <div class="container">
+            {# Logo / Marka #}
+            <a class="navbar-brand agora-brand" href="{% url 'philosophers:list' %}">
+                <i class="fas fa-landmark me-2"></i>
+                <span class="brand-agora">Agora</span>
+                <span class="brand-ai">AI</span>
+            </a>
+
+            {# Mobil toggle #}
+            <button class="navbar-toggler border-0" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#navbarMain"
+                    aria-controls="navbarMain" aria-expanded="false"
+                    aria-label="Menüyü aç/kapat">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.app_name == 'philosophers' %}active{% endif %}"
+                           href="{% url 'philosophers:list' %}">
+                            <i class="fas fa-users me-1"></i> Filozoflar
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.app_name == 'conversations' %}active{% endif %}"
+                           href="{% url 'conversations:list' %}">
+                            <i class="fas fa-comments me-1"></i> Sohbetlerim
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.app_name == 'symposium' %}active{% endif %}"
+                           href="{% url 'symposium:list' %}">
+                            <i class="fas fa-theater-masks me-1"></i> Sempozyum
+                        </a>
+                    </li>
+
+                    <!-- 🔥 YENİ EKLEDİĞİN MENÜ -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.app_name == 'glossary' %}active{% endif %}"
+                           href="{% url 'glossary:list' %}">
+                            <i class="fas fa-book me-1"></i> Kavram Sözlüğü
+                        </a>
+                    </li>
+
+                    {% endif %}
+                </ul>
+
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        {# DÜZELTME: id="userDropdown" eklendi #}
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown"
+                           role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle me-1"></i>
+                            {{ user.username }}
+                        </a>
+                        {# DÜZELTME: aria-labelledby eklendi #}
+                        <ul class="dropdown-menu dropdown-menu-end agora-dropdown" aria-labelledby="userDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'accounts:profile' %}">
+                                    <i class="fas fa-cog me-2"></i>Profil Ayarları
+                                </a>
+                            </li>
+                            {% if user.is_staff %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'admin:index' %}">
+                                    <i class="fas fa-shield-halved me-2"></i>Admin Paneli
+                                </a>
+                            </li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger"
+                                   href="{% url 'accounts:logout' %}"
+                                   onclick="return confirm('Çıkış yapmak istediğinizden emin misiniz?')">
+                                    <i class="fas fa-right-from-bracket me-2"></i>Çıkış Yap
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:login' %}">
+                            <i class="fas fa-right-to-bracket me-1"></i>Giriş Yap
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-agora-gold ms-2" href="{% url 'accounts:register' %}">
+                            Ücretsiz Katıl
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    {# ── Django Mesajları (Flash Messages) ─────────────────────────────── #}
+    {% if messages %}
+    <div class="container mt-3" id="flash-messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show agora-alert"
+             role="alert">
+            {% if message.tags == 'success' %}<i class="fas fa-circle-check me-2"></i>
+            {% elif message.tags == 'error' or message.tags == 'danger' %}<i class="fas fa-circle-xmark me-2"></i>
+            {% elif message.tags == 'warning' %}<i class="fas fa-triangle-exclamation me-2"></i>
+            {% else %}<i class="fas fa-circle-info me-2"></i>{% endif %}
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# ── Ana İçerik ─────────────────────────────────────────────────────── #}
+    <main class="agora-main">
+        {% block content %}{% endblock %}
+    </main>
+
+    {# ── Alt Bilgi ──────────────────────────────────────────────────────── #}
+    <footer class="agora-footer mt-auto">
+        <div class="container">
+            <div class="row py-4">
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <h6 class="agora-brand-small">
+                        <i class="fas fa-landmark me-1"></i>
+                        <span class="brand-agora">Agora</span><span class="brand-ai">AI</span>
+                    </h6>
+                    <p class="text-muted small">
+                        Geçmişin büyük düşünürleriyle dijital diyalog platformu.
+                    </p>
+                </div>
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <h6 class="text-muted small text-uppercase fw-semibold">Hızlı Erişim</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li><a href="{% url 'philosophers:list' %}" class="footer-link">Filozoflar</a></li>
+                        {% if user.is_authenticated %}
+                        <li><a href="{% url 'conversations:list' %}" class="footer-link">Sohbetlerim</a></li>
+                        <li><a href="{% url 'symposium:list' %}" class="footer-link">Sempozyum</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-muted small text-uppercase fw-semibold">Teknoloji</h6>
+                    <p class="text-muted small mb-0">
+                        Powered by DeepSeek &amp; RAG Architecture
+                    </p>
+                    <p class="text-muted small">Django 5 · ChromaDB · PostgreSQL</p>
+                </div>
+            </div>
+            <hr class="border-secondary">
+            <p class="text-center text-muted small py-2 mb-0">
+                &copy; 2025 Agora AI. Felsefe herkese aittir.
+            </p>
+        </div>
+    </footer>
+
+    {# Bootstrap 5 JS Bundle #}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmkkO3axmHdFl9UlFqvKWpQ8Q1bL" crossorigin="anonymous"></script>
+
+    {# Agora AI global JS #}
+    <script src="{% static 'js/main.js' %}"></script>
+
+    {# Sayfa özel JS #}
+    {% block extra_js %}{% endblock %}
+
+    {# Flash mesajlarını 5 saniye sonra otomatik kapat #}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () {
+                const alerts = document.querySelectorAll('#flash-messages .alert');
+                alerts.forEach(function (alert) {
+                    // Güvenli kapatma işlemi (eğer Bootstrap yüklenmediyse sayfanın çökmesini engeller)
+                    if (typeof bootstrap !== 'undefined') {
+                        const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                        bsAlert.close();
+                    } else {
+                        alert.style.display = 'none';
+                    }
+                });
+            }, 5000);
+        });
+    </script>
+</body>
+</html>

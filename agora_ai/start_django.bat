@@ -1,0 +1,3 @@
+@echo off
+set DJANGO_SETTINGS_MODULE=config.settings.development
+python manage.py runserver

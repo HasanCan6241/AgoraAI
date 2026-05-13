@@ -1,0 +1,301 @@
+{# PATH: apps/symposium/templates/symposium/symposium_detail.html #}
+{% extends "base.html" %}
+{% block title %}Sempozyum — {{ session.topic|truncatechars:40 }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Turn Card ─────────────────────────────────────────────── */
+.turn-card {
+    margin-bottom: 1.5rem;
+    border-radius: 16px;
+    border: 1px solid var(--agora-border);
+    overflow: hidden;
+    background: var(--agora-card-bg);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.turn-card:hover {
+    border-color: rgba(255,255,255,0.13);
+}
+
+/* ── Turn Header ────────────────────────────────────────────── */
+.turn-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.85rem 1.25rem;
+    background: var(--agora-dark-3);
+    border-bottom: 1px solid var(--agora-border);
+}
+.user-turn-header {
+    flex-direction: row-reverse;
+    background: rgba(201,168,76,0.04);
+}
+.system-turn-header {
+    background: rgba(13,202,240,0.03);
+}
+
+/* ── Avatar ─────────────────────────────────────────────────── */
+.turn-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    color: var(--agora-gold-light);
+    overflow: hidden;
+    border: 1px solid rgba(201,168,76,0.2);
+    background: linear-gradient(135deg, var(--agora-gold-dark), var(--agora-dark-4));
+}
+.user-turn-header .turn-avatar {
+    background: rgba(201,168,76,0.1);
+    border-color: rgba(201,168,76,0.2);
+    color: var(--agora-gold);
+}
+.system-turn-header .turn-avatar {
+    background: var(--agora-dark-4);
+    border-color: var(--agora-border);
+    color: var(--agora-muted-light);
+    font-size: 0.8rem;
+}
+
+/* ── Turn Meta (isim + alt bilgi) ──────────────────────────── */
+.turn-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    flex: 1;
+}
+.user-turn-header .turn-meta {
+    align-items: flex-end;
+}
+.turn-name {
+    font-family: var(--font-serif);
+    font-size: 0.92rem;
+    color: var(--agora-parchment);
+    line-height: 1.2;
+}
+.turn-sub {
+    font-size: 0.7rem;
+    color: var(--agora-muted);
+}
+
+/* ── Role Badge ─────────────────────────────────────────────── */
+.role-badge {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.18rem 0.55rem;
+    border-radius: 5px;
+    font-weight: 600;
+    color: var(--agora-gold);
+    background: rgba(201,168,76,0.12);
+    border: 1px solid rgba(201,168,76,0.22);
+    white-space: nowrap;
+}
+.role-badge.moderator {
+    color: var(--agora-muted-light);
+    background: rgba(255,255,255,0.04);
+    border-color: var(--agora-border);
+}
+.role-badge.system-badge {
+    color: rgba(13,202,240,0.75);
+    background: rgba(13,202,240,0.07);
+    border-color: rgba(13,202,240,0.18);
+}
+
+/* ── Turn Bubble ────────────────────────────────────────────── */
+.turn-bubble {
+    background: var(--agora-card-bg);
+    padding: 1.1rem 1.4rem;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    line-height: 1.9;
+    color: var(--agora-text);
+}
+.user-turn-bubble {
+    background: rgba(201,168,76,0.04);
+}
+.system-turn-bubble {
+    background: rgba(13,202,240,0.025);
+    font-style: italic;
+    color: var(--agora-muted-light);
+    font-size: 0.87rem;
+}
+
+/* ── Hero ───────────────────────────────────────────────────── */
+.symp-hero {
+    background: linear-gradient(160deg, var(--agora-dark-2) 0%, var(--agora-dark-1) 100%);
+    border-bottom: 1px solid var(--agora-border-light);
+    padding: 2.5rem 0 2rem;
+}
+.symp-hero .hero-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--agora-gold);
+    font-weight: 600;
+    margin-bottom: 0.65rem;
+}
+.symp-hero .hero-title {
+    font-family: var(--font-serif);
+    font-size: 1.65rem;
+    color: var(--agora-parchment);
+    font-style: italic;
+    line-height: 1.4;
+    margin-bottom: 1.25rem;
+}
+
+/* ── Philosopher Pills ──────────────────────────────────────── */
+.phil-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    padding: 0.28rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--agora-border);
+    color: var(--agora-muted-light);
+    background: var(--agora-dark-3);
+}
+.phil-pill .mini-avatar {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--agora-gold-dark), var(--agora-dark-4));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    color: var(--agora-gold-light);
+    flex-shrink: 0;
+}
+
+/* ── Footer Actions ─────────────────────────────────────────── */
+.symp-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    padding-top: 2rem;
+    margin-top: 2rem;
+    border-top: 1px solid var(--agora-border);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="symp-hero">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb" style="font-size:0.78rem;">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'symposium:list' %}" class="text-gold">Sempozyumlar</a>
+                </li>
+                <li class="breadcrumb-item active text-agora-muted">Detay</li>
+            </ol>
+        </nav>
+
+        <p class="hero-label">
+            <i class="fas fa-scroll me-1"></i>Felsefi Tartışma
+        </p>
+        <h1 class="hero-title">"{{ session.topic }}"</h1>
+
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            {% for p in philosophers %}
+            <span class="phil-pill">
+                {% if p.avatar_image %}
+                    <span class="mini-avatar">
+                        <img src="{{ p.avatar_url }}" alt="{{ p.name }}"
+                             style="width:100%;height:100%;object-fit:cover;">
+                    </span>
+                {% else %}
+                    <span class="mini-avatar">{{ p.name|first }}</span>
+                {% endif %}
+                {{ p.name }}
+            </span>
+            {% endfor %}
+            <span class="text-agora-muted" style="font-size:0.76rem;">
+                · {{ session.turn_count }} konuşma · {{ session.created_at|date:"d M Y" }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+
+            {% for turn in turns %}
+            <div class="turn-card">
+
+                {% if turn.role == "philosopher" and turn.philosopher %}
+                <div class="turn-header">
+                    <div class="turn-avatar">
+                        {% if turn.philosopher.avatar_image %}
+                            <img src="{{ turn.philosopher.avatar_url }}"
+                                 alt="{{ turn.philosopher.name }}"
+                                 style="width:100%;height:100%;object-fit:cover;">
+                        {% else %}
+                            {{ turn.philosopher.name|first }}
+                        {% endif %}
+                    </div>
+                    <div class="turn-meta">
+                        <span class="turn-name">{{ turn.philosopher.name }}</span>
+                        <span class="turn-sub">{{ turn.philosopher.era }} · {{ turn.created_at|date:"H:i" }}</span>
+                    </div>
+                    <span class="role-badge">Filozof</span>
+                </div>
+                <div class="turn-bubble">{{ turn.content|linebreaksbr }}</div>
+
+                {% elif turn.role == "user" %}
+                <div class="turn-header user-turn-header">
+                    <div class="turn-avatar">
+                        <i class="fas fa-user fa-xs"></i>
+                    </div>
+                    <div class="turn-meta">
+                        <span class="turn-name" style="font-family:var(--font-body);font-size:0.87rem;">Moderatör</span>
+                        <span class="turn-sub">{{ turn.created_at|date:"H:i" }}</span>
+                    </div>
+                    <span class="role-badge moderator">Soru</span>
+                </div>
+                <div class="turn-bubble user-turn-bubble">{{ turn.content|linebreaksbr }}</div>
+
+                {% elif turn.role == "system" %}
+                <div class="turn-header system-turn-header">
+                    <div class="turn-avatar">
+                        <i class="fas fa-scroll fa-xs"></i>
+                    </div>
+                    <div class="turn-meta">
+                        <span class="turn-name" style="font-family:var(--font-body);font-size:0.87rem;color:rgba(13,202,240,0.75);">Sempozyum Özeti</span>
+                        <span class="turn-sub">Oturum arası</span>
+                    </div>
+                    <span class="role-badge system-badge">Özet</span>
+                </div>
+                <div class="turn-bubble system-turn-bubble">{{ turn.content|linebreaksbr }}</div>
+
+                {% endif %}
+            </div>
+            {% empty %}
+            <p class="text-agora-muted fst-italic text-center py-5">
+                Henüz konuşma kaydedilmemiş.
+            </p>
+            {% endfor %}
+
+            <div class="symp-footer">
+                <a href="{% url 'symposium:create' %}" class="btn btn-agora-gold">
+                    <i class="fas fa-plus me-1"></i>Yeni Sempozyum
+                </a>
+                <a href="{% url 'symposium:list' %}" class="btn btn-agora-ghost">
+                    <i class="fas fa-list me-1"></i>Tüm Sempozyumlar
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

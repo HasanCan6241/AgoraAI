@@ -1,0 +1,52 @@
+# PATH: .gitignore
+# Agora AI — Git Yoksayma Listesi
+
+# ── Python ────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+
+# ── Sanal Ortam ───────────────────────────────────────────────────────────
+.venv/
+venv/
+ENV/
+env/
+
+# ── Çevre Değişkenleri (KRİTİK — asla commit etme!) ─────────────────────
+.env
+.env.local
+.env.production
+
+# ── Django ────────────────────────────────────────────────────────────────
+*.log
+local_settings.py
+db.sqlite3
+staticfiles/
+media/
+
+# ── ChromaDB Veri (Docker volume ile yönetilir) ──────────────────────────
+/data/
+
+# ── Docker ────────────────────────────────────────────────────────────────
+.dockerignore
+
+# ── IDE / Editor ──────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# ── Test / Coverage ───────────────────────────────────────────────────────
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
